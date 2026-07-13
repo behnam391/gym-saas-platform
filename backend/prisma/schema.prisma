@@ -1,0 +1,863 @@
+// ============================================================================
+// سامانه هوشمند مدیریت باشگاه‌های ورزشی — Database Schema
+// Multi-tenant strategy: SHARED DATABASE, shared schema, tenant_id discriminator
+// on every tenant-scoped table. Enforced at the application layer via a
+// Prisma middleware / NestJS request-scoped tenant context (see backend skeleton)
+// AND reinforced with PostgreSQL Row-Level Security (RLS) policies for defense
+// in depth (policy DDL included at the bottom of this file as SQL, since RLS
+// is not natively expressible in Prisma syntax).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  SUPER_ADMIN
+  GYM_OWNER
+  TRAINER
+  NUTRITIONIST
+  RECEPTION
+  BUFFET_STAFF
+  ATHLETE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum InsuranceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MembershipStatus {
+  PENDING_INSURANCE   // blocked until insurance approved
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  ONLINE_GATEWAY
+  CASH
+  POS
+  WALLET
+}
+
+enum AttendanceMethod {
+  QR_CODE
+  MEMBERSHIP_CARD
+  MANUAL
+}
+
+enum FitnessGoal {
+  FAT_LOSS
+  MUSCLE_GAIN
+  GENERAL_FITNESS
+  ENDURANCE
+  REHABILITATION
+}
+
+enum TrainingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ATHLETE
+}
+
+enum AISuggestionType {
+  BODY_ANALYSIS
+  WORKOUT_DRAFT
+  NUTRITION_DRAFT
+  TRAINER_SUMMARY
+  NUTRITIONIST_SUMMARY
+  RISK_WARNING
+}
+
+enum AISuggestionStatus {
+  GENERATED
+  EDITED
+  APPROVED
+  REJECTED
+}
+
+enum ProgramStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TicketTargetType {
+  GYM
+  TRAINER
+  NUTRITIONIST
+  PLATFORM
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum OrderStatus {
+  CART
+  PLACED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  EMAIL
+  PUSH
+}
+
+// ============================================================================
+// TENANT (GYM) — root of all tenant-scoped data
+// ============================================================================
+
+model Tenant {
+  id              String   @id @default(uuid())
+  slug            String   @unique // used in public marketplace URLs
+  name            String
+  description     String?  @db.Text
+  logoUrl         String?
+  coverImageUrl   String?
+  city            String
+  address         String
+  latitude        Float?
+  longitude       Float?
+  workingHours    Json?    // structured weekly hours
+  genderPolicy    Gender?  // null = mixed
+  phone           String?
+  email           String?
+  socialLinks     Json?
+  isActive        Boolean  @default(true)
+  isVerified      Boolean  @default(false)
+  trustScore      Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  galleryImages   TenantGalleryImage[]
+  facilities      TenantFacility[]
+  membershipPlans MembershipPlan[]
+  users           User[]
+  memberships     Membership[]
+  attendances     Attendance[]
+  trainingPrograms TrainingProgram[]
+  dietPlans       DietPlan[]
+  productCategories ProductCategory[]
+  products        CafeteriaProduct[]
+  orders          Order[]
+  payments        Payment[]
+  tickets         Ticket[]
+  reviews         Review[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  crowdSnapshots  CrowdSnapshot[]
+  messages        Message[]
+
+  @@index([city])
+  @@index([isActive, isVerified])
+}
+
+model TenantGalleryImage {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url       String
+  type      String   @default("image") // image | video
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model TenantFacility {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String // e.g. "سونا", "استخر", "پارکینگ"
+  icon     String?
+
+  @@index([tenantId])
+}
+
+model MembershipPlan {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String
+  description String?  @db.Text
+  durationDays Int
+  price        Decimal @db.Decimal(12, 2)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  Membership[]
+
+  @@index([tenantId])
+}
+
+// ============================================================================
+// USERS & RBAC
+// ============================================================================
+
+model User {
+  id            String   @id @default(uuid())
+  // null for SUPER_ADMIN only; every other role MUST belong to exactly one tenant
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  role          Role
+
+  firstName     String
+  lastName      String
+  nationalId    String   @unique
+  mobile        String   @unique
+  email         String?  @unique
+  passwordHash  String
+
+  gender        Gender
+  dateOfBirth   DateTime
+  isMinor       Boolean  @default(false) // derived server-side from dateOfBirth
+  city          String?
+  address       String?
+
+  isActive      Boolean  @default(true)
+  isRestricted  Boolean  @default(false) // e.g. minor pending parental consent
+  emailVerifiedAt DateTime?
+  mobileVerifiedAt DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  refreshTokens   RefreshToken[]
+  athleteProfile  AthleteProfile?
+  trainerProfile  TrainerProfile?
+  nutritionistProfile NutritionistProfile?
+  parentalConsent ParentalConsent?
+  insuranceDocs   InsuranceDocument[]
+  memberships     Membership[]
+  attendances     Attendance[]            @relation("AttendanceUser")
+  checkedInBy     Attendance[]            @relation("AttendanceOperator")
+  ordersPlaced    Order[]
+  paymentsMade    Payment[]
+  ticketsCreated  Ticket[]                @relation("TicketCreator")
+  ticketsAssigned Ticket[]                @relation("TicketAssignee")
+  reviewsWritten  Review[]                @relation("ReviewAuthor")
+  notifications   Notification[]
+  sentMessages    Message[]               @relation("MessageSender")
+  auditLogs       AuditLog[]
+  trainerStudents TrainerStudent[]        @relation("StudentSide")
+  nutritionistClients NutritionistClient[] @relation("ClientSide")
+
+  @@index([tenantId, role])
+  @@index([nationalId])
+  @@index([mobile])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ParentalConsent {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guardianName String
+  guardianNationalId String
+  guardianMobile String
+  documentUrl  String
+  status       VerificationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  rejectionReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model InsuranceDocument {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentUrl String
+  provider   String?
+  policyNumber String?
+  validFrom  DateTime?
+  validUntil DateTime?
+  status     InsuranceStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  rejectionReason String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+// ============================================================================
+// ATHLETE PROFILE
+// ============================================================================
+
+model AthleteProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  heightCm      Float?
+  weightKg      Float?
+
+  trainingHistory String? @db.Text
+  injuries        String? @db.Text
+  illnesses       String? @db.Text
+  medications     String? @db.Text
+  allergies       String? @db.Text
+
+  fitnessGoal     FitnessGoal?
+  trainingLevel   TrainingLevel?
+  activityLevel   String? // e.g. sedentary, light, moderate, very_active
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  measurements  BodyMeasurement[]
+  aiSuggestions AISuggestion[]
+  programAssignments TrainingProgram[] @relation("AthleteProgram")
+  dietAssignments    DietPlan[]        @relation("AthleteDiet")
+  goals         Goal[]
+  trainerLinks  TrainerStudent[]
+  nutritionistLinks NutritionistClient[]
+}
+
+model BodyMeasurement {
+  id          String   @id @default(uuid())
+  athleteId   String
+  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  recordedAt  DateTime @default(now())
+  weightKg    Float?
+  waistCm     Float?
+  chestCm     Float?
+  armCm       Float?
+  thighCm     Float?
+  calfCm      Float?
+  neckCm      Float?
+  shoulderCm  Float?
+  bodyFatPercent Float?
+
+  @@index([athleteId, recordedAt])
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  athleteId   String
+  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  type        FitnessGoal
+  targetValue Float?
+  targetDate  DateTime?
+  achieved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([athleteId])
+}
+
+// ============================================================================
+// TRAINER / NUTRITIONIST PROFILES & VERIFICATION
+// ============================================================================
+
+model TrainerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?  @db.Text
+  specialties String[]
+  certificateUrl String?
+  status      VerificationStatus @default(PENDING) // approved by Gym Owner
+  approvedById String?
+  approvedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  students    TrainerStudent[]
+  programs    TrainingProgram[] @relation("TrainerPrograms")
+}
+
+model NutritionistProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?  @db.Text
+  nationalIdDocUrl String
+  certificateUrl   String
+  profileImageUrl  String?
+  status      VerificationStatus @default(PENDING) // approved ONLY by Super Admin
+  approvedById String?
+  approvedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clients     NutritionistClient[]
+  dietPlans   DietPlan[] @relation("NutritionistDiets")
+}
+
+model TrainerStudent {
+  id          String   @id @default(uuid())
+  trainerId   String
+  trainer     TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  athleteId   String
+  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  userId      String   // denormalized for direct User relation/listing
+  user        User     @relation("StudentSide", fields: [userId], references: [id], onDelete: Cascade)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  isActive    Boolean  @default(true)
+
+  @@unique([trainerId, athleteId])
+  @@index([trainerId])
+}
+
+model NutritionistClient {
+  id            String   @id @default(uuid())
+  nutritionistId String
+  nutritionist  NutritionistProfile @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  athleteId     String
+  athlete       AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation("ClientSide", fields: [userId], references: [id], onDelete: Cascade)
+  startedAt     DateTime @default(now())
+  endedAt       DateTime?
+  isActive      Boolean  @default(true)
+
+  @@unique([nutritionistId, athleteId])
+  @@index([nutritionistId])
+}
+
+// ============================================================================
+// AI ENGINE OUTPUTS
+// ============================================================================
+
+model AISuggestion {
+  id          String   @id @default(uuid())
+  athleteId   String
+  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  type        AISuggestionType
+  status      AISuggestionStatus @default(GENERATED)
+
+  inputSnapshot  Json   // exact inputs sent to the AI engine, for auditability
+  outputJson     Json   // structured AI output (see AI Engine contract doc)
+  modelVersion   String
+
+  reviewedById   String? // trainer/nutritionist who edited or approved
+  reviewedAt     DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([athleteId, type])
+}
+
+// ============================================================================
+// TRAINING PROGRAMS & DIET PLANS
+// ============================================================================
+
+model TrainingProgram {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trainerId   String
+  trainer     TrainerProfile @relation("TrainerPrograms", fields: [trainerId], references: [id], onDelete: Cascade)
+  athleteId   String
+  athlete     AthleteProfile @relation("AthleteProgram", fields: [athleteId], references: [id], onDelete: Cascade)
+
+  title       String
+  goal        FitnessGoal?
+  status      ProgramStatus @default(DRAFT)
+  sourceAISuggestionId String? // if generated from AI draft
+  startDate   DateTime?
+  endDate     DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    ProgramSession[]
+
+  @@index([tenantId])
+  @@index([trainerId])
+  @@index([athleteId])
+}
+
+model ProgramSession {
+  id          String   @id @default(uuid())
+  programId   String
+  program     TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int      // 0-6
+  title       String
+  exercises   ProgramExercise[]
+
+  @@index([programId])
+}
+
+model ProgramExercise {
+  id          String   @id @default(uuid())
+  sessionId   String
+  session     ProgramSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name        String
+  sets        Int?
+  reps        String?  // e.g. "8-12"
+  restSeconds Int?
+  notes       String?
+  sortOrder   Int      @default(0)
+
+  @@index([sessionId])
+}
+
+model DietPlan {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nutritionistId String
+  nutritionist   NutritionistProfile @relation("NutritionistDiets", fields: [nutritionistId], references: [id], onDelete: Cascade)
+  athleteId   String
+  athlete     AthleteProfile @relation("AthleteDiet", fields: [athleteId], references: [id], onDelete: Cascade)
+
+  title       String
+  goal        FitnessGoal?
+  status      ProgramStatus @default(DRAFT)
+  sourceAISuggestionId String?
+  dailyCalories Int?
+  startDate   DateTime?
+  endDate     DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  meals       DietMeal[]
+
+  @@index([tenantId])
+  @@index([nutritionistId])
+  @@index([athleteId])
+}
+
+model DietMeal {
+  id          String   @id @default(uuid())
+  dietPlanId  String
+  dietPlan    DietPlan @relation(fields: [dietPlanId], references: [id], onDelete: Cascade)
+  mealTime    String   // e.g. "صبحانه", "میان‌وعده ۱"
+  description String   @db.Text
+  calories    Int?
+  sortOrder   Int      @default(0)
+
+  @@index([dietPlanId])
+}
+
+// ============================================================================
+// MEMBERSHIPS, ATTENDANCE, PAYMENTS
+// ============================================================================
+
+model Membership {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId      String
+  plan        MembershipPlan @relation(fields: [planId], references: [id])
+
+  status      MembershipStatus @default(PENDING_INSURANCE)
+  startDate   DateTime?
+  endDate     DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments    Payment[]
+  attendances Attendance[]
+
+  @@index([tenantId, userId])
+  @@index([status])
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+  orderId      String?  @unique
+  order        Order?   @relation(fields: [orderId], references: [id])
+
+  amount       Decimal  @db.Decimal(12, 2)
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  gatewayRef   String?
+  paidAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, userId])
+  @@index([status])
+}
+
+model Attendance {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+
+  method       AttendanceMethod
+  checkInAt    DateTime @default(now())
+  checkOutAt   DateTime?
+  operatorId   String?  // reception staff who manually checked the user in
+  operator     User?    @relation("AttendanceOperator", fields: [operatorId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([tenantId, checkInAt])
+}
+
+// Periodic snapshot of active occupancy, written by a scheduled job reading
+// active (checkInAt set, checkOutAt null) Attendance rows; broadcast over
+// WebSocket and optionally persisted here for peak-hour analytics.
+model CrowdSnapshot {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activeCount Int
+  capacity    Int
+  level       String   // GREEN | YELLOW | RED, computed from activeCount/capacity
+  recordedAt  DateTime @default(now())
+
+  @@index([tenantId, recordedAt])
+}
+
+// ============================================================================
+// CAFETERIA
+// ============================================================================
+
+model ProductCategory {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int      @default(0)
+
+  products  CafeteriaProduct[]
+
+  @@index([tenantId])
+}
+
+model CafeteriaProduct {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+
+  title       String
+  description String?  @db.Text
+  imageUrl    String?
+  price       Decimal  @db.Decimal(12, 2)
+  inventory   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+
+  @@index([tenantId, categoryId])
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status      OrderStatus @default(CART)
+  totalAmount Decimal  @db.Decimal(12, 2) @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       OrderItem[]
+  payment     Payment?
+
+  @@index([tenantId, userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     CafeteriaProduct @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+
+  @@index([orderId])
+}
+
+// ============================================================================
+// TICKETS, REVIEWS, NOTIFICATIONS, MESSAGES
+// ============================================================================
+
+model Ticket {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User     @relation("TicketCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedToId String?
+  assignedTo   User?    @relation("TicketAssignee", fields: [assignedToId], references: [id])
+
+  targetType   TicketTargetType
+  targetId     String?  // gymId / trainerId / nutritionistId, nullable for PLATFORM
+  subject      String
+  description  String   @db.Text
+  status       TicketStatus @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  resolvedAt   DateTime?
+
+  @@index([tenantId, status])
+  @@index([createdById])
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User     @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  targetType   TicketTargetType // reused enum: GYM | TRAINER | NUTRITIONIST
+  targetId     String
+
+  rating       Int      // 1-5
+  comment      String?  @db.Text
+
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, targetType, targetId])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channel     NotificationChannel @default(IN_APP)
+  title       String
+  body        String   @db.Text
+  isRead      Boolean  @default(false)
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  conversationId String // groups a thread between two users
+  body        String   @db.Text
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, conversationId])
+  @@index([recipientId, isRead])
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  action      String   // e.g. "USER_LOGIN", "INSURANCE_APPROVED", "MEMBER_DELETED"
+  entityType  String
+  entityId    String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([actorId])
+  @@index([entityType, entityId])
+}

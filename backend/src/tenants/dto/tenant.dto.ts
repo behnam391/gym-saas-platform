@@ -1,0 +1,45 @@
+import { IsArray, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+
+export class SearchTenantsDto {
+  @IsOptional() @IsString() city?: string;
+  @IsOptional() @IsNumber() latitude?: number;
+  @IsOptional() @IsNumber() longitude?: number;
+  @IsOptional() @IsNumber() @Min(0) maxDistanceKm?: number;
+  @IsOptional() @IsNumber() @Min(0) minPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) maxPrice?: number;
+  @IsOptional() @IsNumber() @Min(0) minRating?: number;
+  @IsOptional() @IsIn(['MALE', 'FEMALE']) gender?: 'MALE' | 'FEMALE';
+  @IsOptional() @IsArray() @IsString({ each: true }) facilities?: string[];
+}
+
+export class UpdateTenantProfileDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() logoUrl?: string;
+  @IsOptional() @IsString() coverImageUrl?: string;
+  @IsOptional() @IsString() city?: string;
+  @IsOptional() @IsString() address?: string;
+  @IsOptional() @IsNumber() latitude?: number;
+  @IsOptional() @IsNumber() longitude?: number;
+  @IsOptional() workingHours?: Record<string, unknown>;
+  @IsOptional() socialLinks?: Record<string, unknown>;
+}
+
+export class CreateMembershipPlanDto {
+  @IsString() title: string;
+  @IsOptional() @IsString() description?: string;
+  @IsNumber() @Min(1) durationDays: number;
+  @IsNumber() @Min(0) price: number;
+}
+
+export class ReviewInsuranceDto {
+  @IsIn(['APPROVED', 'REJECTED'])
+  status: 'APPROVED' | 'REJECTED';
+  @IsOptional() @IsString() rejectionReason?: string;
+}
+
+export class ReviewParentalConsentDto {
+  @IsIn(['APPROVED', 'REJECTED'])
+  status: 'APPROVED' | 'REJECTED';
+  @IsOptional() @IsString() rejectionReason?: string;
+}

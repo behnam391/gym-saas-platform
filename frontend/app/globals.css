@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ===== Design tokens ===== */
+  /* پس‌زمینه: سبز-ساج تیره (نه سیاه خام) — حس باشگاه پریمیوم/چوب-و-فلز، نه فضای دیجیتال صرف */
+  --color-base: 14 24 21; /* #0E1815 */
+  --color-surface: 20 33 29; /* #14211D */
+  --color-surface-raised: 27 43 38; /* #1B2B26 */
+  /* لهجه برنجی — به جنس کارت‌های فلزی باشگاه‌های قدیمی/مدال اشاره دارد */
+  --color-accent: 201 162 39; /* #C9A227 */
+  --color-accent-soft: 228 199 102; /* #E4C766 */
+  --color-ink: 243 241 231; /* #F3F1E7 */
+  --color-muted: 159 175 168; /* #9FAFA8 */
+  --color-success: 76 175 109; /* #4CAF6D */
+  --color-warning: 224 178 58; /* #E0B23A */
+  --color-danger: 209 80 59; /* #D1503B */
+  --color-border: 255 255 255; /* used at low alpha */
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  background-color: rgb(var(--color-base));
+  color: rgb(var(--color-ink));
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ===== Signature element: کارت عضویت (membership-card motif) =====
+   Used consistently for plan cards, gym cards, and the athlete's digital
+   membership card — a deliberate callback to the physical laminated gym
+   card, rendered as a thin brass edge + soft inner glow rather than a
+   generic flat card. */
+.membership-card {
+  position: relative;
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    160deg,
+    rgb(var(--color-surface-raised)) 0%,
+    rgb(var(--color-surface)) 100%
+  );
+  border: 1px solid rgb(var(--color-border) / 0.08);
+  box-shadow: 0 1px 0 0 rgb(var(--color-accent) / 0.55) inset,
+    0 16px 40px -16px rgb(0 0 0 / 0.55);
+}
+
+.membership-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    115deg,
+    rgb(var(--color-accent) / 0.7),
+    transparent 30%,
+    transparent 70%,
+    rgb(var(--color-accent-soft) / 0.4)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .crowd-pulse {
+    animation: crowd-pulse 2.4s ease-in-out infinite;
+  }
+}
+@keyframes crowd-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
