@@ -23,8 +23,7 @@ export function PendingTrainersList({ initial }: { initial: TrainerApplication[]
     setBusyId(id);
     setError(null);
     try {
-      const token = sessionStorage.getItem('accessToken') ?? undefined;
-      await api.patch(`/trainers/${id}/review`, { status }, { accessToken: token });
+      await api.patch(`/trainers/${id}/review`, { status });
       setItems((list) => list.filter((t) => t.id !== id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'خطایی رخ داد.');

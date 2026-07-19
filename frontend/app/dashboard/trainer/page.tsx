@@ -11,7 +11,7 @@ interface Student {
 }
 
 async function getStudents(): Promise<Student[]> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<Student[]>('/trainers/students', { accessToken: token });
   } catch {

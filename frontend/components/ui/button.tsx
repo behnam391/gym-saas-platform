@@ -21,18 +21,30 @@ const sizeStyles: Record<string, string> = {
   lg: 'h-13 px-7 text-base',
 };
 
+export function buttonStyles({
+  variant = 'primary',
+  size = 'md',
+  className,
+}: {
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
+  className?: string;
+} = {}) {
+  return cn(
+    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors',
+    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    'disabled:pointer-events-none disabled:opacity-50',
+    variantStyles[variant],
+    sizeStyles[size],
+    className,
+  );
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => (
     <button
       ref={ref}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-        'disabled:opacity-50 disabled:pointer-events-none',
-        variantStyles[variant],
-        sizeStyles[size],
-        className,
-      )}
+      className={buttonStyles({ variant, size, className })}
       {...props}
     />
   ),

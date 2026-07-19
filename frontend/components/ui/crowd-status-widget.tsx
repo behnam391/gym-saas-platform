@@ -21,14 +21,11 @@ export function CrowdStatusWidget() {
   const [status, setStatus] = useState<CrowdStatus | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('accessToken') ?? undefined;
     let mounted = true;
 
     async function poll() {
       try {
-        const data = await api.get<CrowdStatus>('/attendance/crowd-status', {
-          accessToken: token,
-        });
+        const data = await api.get<CrowdStatus>('/attendance/crowd-status');
         if (mounted) setStatus(data);
       } catch {
         // silently retry on next interval

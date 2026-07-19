@@ -18,10 +18,14 @@ import { DietModule } from './diet/diet.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
+import { validateEnv } from './config/env.validation';
+import { AthletesModule } from './athletes/athletes.module';
+import { PaymentsModule } from './payments/payments.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]), // global default; tighter per-route via @Throttle
     JwtModule.register({}),
     PrismaModule,
@@ -39,10 +43,13 @@ import { TenantContextMiddleware } from './common/middleware/tenant-context.midd
     DietModule,
     SuperAdminModule,
     UploadsModule,
+    AthletesModule,
+    PaymentsModule,
+    MessagesModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TenantContextMiddleware).forRoutes('*');
+    consumer.apply(TenantContextMiddleware).forRoutes('*splat');
   }
 }

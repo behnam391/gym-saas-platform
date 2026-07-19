@@ -2,14 +2,15 @@ import {
   Injectable,
   OnModuleInit,
   OnModuleDestroy,
-  Scope,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { TenantContext } from '../common/tenant-context';
 import { assertValidUuid } from '../common/uuid.util';
 
 /**
- * Request-scoped Prisma wrapper.
+ * Singleton Prisma wrapper. Request isolation is supplied by TenantContext's
+ * AsyncLocalStorage, so the application owns two connection pools total
+ * (tenant + platform) instead of two pools per incoming request.
  *
  * Two layers of tenant isolation, both driven by the SAME trusted
  * TenantContext (populated only from a verified JWT — see
@@ -28,7 +29,7 @@ import { assertValidUuid } from '../common/uuid.util';
  * separate Postgres role that BYPASSES RLS entirely (granted explicitly,
  * never implicitly) for legitimate cross-tenant reporting.
  */
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly tenantClient: PrismaClient;
   private readonly platformClient: PrismaClient;
@@ -43,7 +44,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    await this.tenantClient.$connect();
+    await Promise.all([
+      this.tenantClient.$connect(),
+      this.platformClient.$connect(),
+    ]);
   }
 
   async onModuleDestroy() {

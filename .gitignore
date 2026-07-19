@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+dist/
+coverage/
+
+# Local environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs and editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.local/
+
+# TypeScript / tooling caches
+*.tsbuildinfo
+.eslintcache

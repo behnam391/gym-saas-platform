@@ -23,8 +23,7 @@ export function MembersTable({ initialMembers }: { initialMembers: Member[] }) {
     setBusyId(userId);
     setError(null);
     try {
-      const token = sessionStorage.getItem('accessToken') ?? undefined;
-      await api.patch(`/tenants/me/parental-consent/${userId}`, { status: 'APPROVED' }, { accessToken: token });
+      await api.patch(`/tenants/me/parental-consent/${userId}`, { status: 'APPROVED' });
       setMembers((m) => m.map((x) => (x.id === userId ? { ...x, isRestricted: false } : x)));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'خطایی رخ داد.');

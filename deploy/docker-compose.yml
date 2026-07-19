@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -91,6 +89,8 @@ services:
         NEXT_PUBLIC_WS_URL: ${PUBLIC_API_URL}
     restart: unless-stopped
     depends_on: [backend]
+    environment:
+      API_BASE_URL: http://backend:3000/api/v1
     expose: ['3001']
     networks: [gym_net]
 

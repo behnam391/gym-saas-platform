@@ -4,6 +4,7 @@ import { AiProviderService } from './ai-provider.service';
 import { AI_SYSTEM_PROMPTS } from './ai-prompts';
 import { GenerateSuggestionDto, ReviewSuggestionDto } from './dto/ai-engine.dto';
 import { calculateAge } from '../common/age.util';
+import { Prisma } from '@prisma/client';
 
 const MODEL_VERSION = 'claude-sonnet-4-6';
 
@@ -53,7 +54,7 @@ export class AiEngineService {
           type: dto.type as any,
           status: 'GENERATED',
           inputSnapshot,
-          outputJson,
+          outputJson: outputJson as Prisma.InputJsonValue,
           modelVersion: MODEL_VERSION,
         },
       });
@@ -104,7 +105,7 @@ export class AiEngineService {
         where: { id: suggestionId },
         data: {
           status: dto.status as any,
-          outputJson: dto.editedOutput ?? suggestion.outputJson,
+          outputJson: (dto.editedOutput ?? suggestion.outputJson) as Prisma.InputJsonValue,
           reviewedById: reviewerId,
           reviewedAt: new Date(),
         },

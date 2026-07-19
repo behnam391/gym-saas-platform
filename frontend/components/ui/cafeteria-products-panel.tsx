@@ -29,13 +29,11 @@ export function CafeteriaProductsPanel({ initial }: { initial: Product[] }) {
     setError(null);
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('accessToken') ?? undefined;
       // Requires an existing categoryId in a real flow — simplified here to
       // demonstrate the create-product call; category picker omitted.
       const created = await api.post<Product>(
         '/cafeteria/products',
         { title, price: Number(price), inventory: Number(inventory), categoryId: 'default' },
-        { accessToken: token },
       );
       setProducts((p) => [created, ...p]);
       setTitle('');

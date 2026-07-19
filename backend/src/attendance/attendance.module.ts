@@ -3,9 +3,10 @@ import { AttendanceService } from './attendance.service';
 import { AttendanceController } from './attendance.controller';
 import { CrowdGateway } from './crowd.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, JwtModule.register({})],
   controllers: [AttendanceController],
   providers: [AttendanceService, CrowdGateway],
 })

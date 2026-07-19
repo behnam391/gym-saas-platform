@@ -21,25 +21,25 @@ export class TenantContextMiddleware implements NestMiddleware {
   ) {}
 
   use(req: Request, _res: Response, next: NextFunction) {
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.slice('Bearer '.length);
-        // Verified (not just decoded) — throws on bad signature/expiry.
-        const payload = this.jwt.verify(token, {
-          secret: process.env.JWT_ACCESS_SECRET,
-        });
-        this.tenantContext.userId = payload.sub;
-        this.tenantContext.role = payload.role;
-        this.tenantContext.tenantId = payload.tenantId ?? null;
-        this.tenantContext.isSuperAdmin = payload.role === 'SUPER_ADMIN';
-      } catch {
-        // Invalid/expired token: leave context empty.
-        // Route guards (JwtAuthGuard) are responsible for rejecting the
-        // request outright on protected endpoints — this middleware never
-        // throws, so public marketplace routes keep working unauthenticated.
+    this.tenantContext.run(() => {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.slice('Bearer '.length);
+          // Verified (not just decoded) — throws on bad signature/expiry.
+          const payload = this.jwt.verify(token, {
+            secret: process.env.JWT_ACCESS_SECRET,
+          });
+          this.tenantContext.userId = payload.sub;
+          this.tenantContext.role = payload.role;
+          this.tenantContext.tenantId = payload.tenantId ?? null;
+          this.tenantContext.isSuperAdmin = payload.role === 'SUPER_ADMIN';
+        } catch {
+          // Invalid/expired token: leave context empty. Route guards reject
+          // protected requests while public marketplace routes still work.
+        }
       }
-    }
-    next();
+      next();
+    });
   }
 }

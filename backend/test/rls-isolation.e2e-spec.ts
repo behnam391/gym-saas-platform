@@ -24,6 +24,7 @@ describeIfDb('Row-Level Security: cross-tenant isolation', () => {
   let prisma: PrismaClient;
   let tenantAId: string;
   let tenantBId: string;
+  let athleteProfileBId: string;
 
   beforeAll(async () => {
     prisma = new PrismaClient({ datasources: { db: { url: TEST_DB_URL } } });
@@ -48,6 +49,7 @@ describeIfDb('Row-Level Security: cross-tenant isolation', () => {
           firstName: 'کاربر', lastName: 'آ',
           nationalId: `A-${Date.now()}`, mobile: `0910${Date.now() % 10000000}`,
           passwordHash: 'x', gender: 'MALE', dateOfBirth: new Date('1990-01-01'),
+          athleteProfile: { create: {} },
         },
       });
       await tx.attendance.create({
@@ -64,8 +66,11 @@ describeIfDb('Row-Level Security: cross-tenant isolation', () => {
           firstName: 'کاربر', lastName: 'ب',
           nationalId: `B-${Date.now()}`, mobile: `0911${Date.now() % 10000000}`,
           passwordHash: 'x', gender: 'FEMALE', dateOfBirth: new Date('1990-01-01'),
+          athleteProfile: { create: {} },
         },
+        include: { athleteProfile: true },
       });
+      athleteProfileBId = userB.athleteProfile!.id;
       await tx.attendance.create({
         data: { tenantId: tenantBId, userId: userB.id, method: 'MANUAL' },
       });
@@ -103,6 +108,25 @@ describeIfDb('Row-Level Security: cross-tenant isolation', () => {
       return tx.attendance.findMany();
     });
     expect(rows.every((r) => r.tenantId === tenantBId)).toBe(true);
+  });
+
+  it("tenant A cannot see tenant B's indirectly-scoped athlete profile", async () => {
+    const rows = await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantAId}'`);
+      return tx.athleteProfile.findMany({ where: { id: athleteProfileBId } });
+    });
+    expect(rows).toHaveLength(0);
+  });
+
+  it("tenant A cannot add a measurement to tenant B's athlete profile", async () => {
+    await expect(
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantAId}'`);
+        return tx.bodyMeasurement.create({
+          data: { athleteId: athleteProfileBId, weightKg: 80 },
+        });
+      }),
+    ).rejects.toThrow();
   });
 
   it('an INSERT with a tenantId that does not match the session variable is rejected by the WITH CHECK policy', async () => {

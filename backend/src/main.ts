@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +22,21 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api/v1');
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('سامانه هوشمند مدیریت باشگاه‌های ورزشی')
+    .setDescription('مستندات API پلتفرم چندباشگاهی، داشبوردها و مارکت‌پلیس عمومی')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+  const apiDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, apiDocument, {
+    customSiteTitle: 'مستندات API باشگاه‌یار',
+    swaggerOptions: { persistAuthorization: true, displayRequestDuration: true },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

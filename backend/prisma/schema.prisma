@@ -373,7 +373,7 @@ model AthleteProfile {
   updatedAt     DateTime @updatedAt
 
   measurements  BodyMeasurement[]
-  aiSuggestions AISuggestion[]
+  aiSuggestions AiSuggestion[]
   programAssignments TrainingProgram[] @relation("AthleteProgram")
   dietAssignments    DietPlan[]        @relation("AthleteDiet")
   goals         Goal[]
@@ -490,7 +490,7 @@ model NutritionistClient {
 // AI ENGINE OUTPUTS
 // ============================================================================
 
-model AISuggestion {
+model AiSuggestion {
   id          String   @id @default(uuid())
   athleteId   String
   athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
@@ -508,6 +508,7 @@ model AISuggestion {
   updatedAt   DateTime @updatedAt
 
   @@index([athleteId, type])
+  @@map("AISuggestion")
 }
 
 // ============================================================================

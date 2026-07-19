@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MembershipCard } from '../../../components/ui/membership-card';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
@@ -33,8 +33,9 @@ const initial: FormState = {
   address: '',
 };
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>(initial);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,15 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await api.post<{ message: string }>('/auth/register', form);
+      const tenantId = searchParams.get('tenantId') ?? undefined;
+      const membershipPlanId = searchParams.get('membershipPlanId') ?? undefined;
+      const payload = {
+        ...form,
+        email: form.email.trim() || undefined,
+        tenantId,
+        membershipPlanId,
+      };
+      const res = await api.post<{ message: string }>('/auth/register', payload);
       setMessage(res.message);
       setTimeout(() => router.push('/auth/login'), 1500);
     } catch (err) {
@@ -64,7 +73,9 @@ export default function RegisterPage() {
       <MembershipCard className="w-full">
         <h1 className="mb-1 text-2xl font-extrabold">ثبت‌نام در سامانه</h1>
         <p className="mb-6 text-sm text-muted">
-          اگر سن شما کمتر از ۱۸ سال است، حساب کاربری تا تایید رضایت‌نامه والدین محدود خواهد بود.
+          {searchParams.has('membershipPlanId')
+            ? 'پس از ثبت‌نام، درخواست عضویت شما برای باشگاه ثبت می‌شود و با تایید بیمه ورزشی فعال خواهد شد.'
+            : 'اگر سن شما کمتر از ۱۸ سال است، حساب کاربری تا تایید رضایت‌نامه والدین محدود خواهد بود.'}
         </p>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
@@ -105,5 +116,21 @@ export default function RegisterPage() {
         </form>
       </MembershipCard>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex min-h-screen max-w-lg items-center px-6 py-12">
+          <MembershipCard className="w-full text-center text-muted">
+            در حال آماده‌سازی فرم ثبت‌نام…
+          </MembershipCard>
+        </main>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -43,7 +43,7 @@ npm run dev
 
 1. یک `app/dashboard/<role>/layout.tsx` با همان ساختار سایدبار (`dashboard/athlete/layout.tsx` را کپی و آیتم‌های نویگیشن را عوض کنید).
 2. هر صفحه از `MembershipCard` برای تمام پنل‌های خلاصه‌ای استفاده می‌کند — نه کارت ساده — تا یکپارچگی بصری حفظ شود.
-3. فراخوانی API همیشه از طریق `lib/api.ts` با `accessToken` از `sessionStorage` (یا در نسخه production: یک هوک `useAuth` که توکن را از یک httpOnly cookie/refresh flow می‌گیرد).
+3. فراخوانی API همیشه از طریق `lib/api.ts` انجام می‌شود؛ در مرورگر، BFF داخلی Next.js نشست را با کوکی‌های `httpOnly` مدیریت و توکن دسترسی منقضی‌شده را به‌صورت امن تعویض می‌کند.
 4. وضعیت‌ها (Pending/Approved/Rejected، اولویت تیکت، سطح شلوغی) همیشه با `Badge` و `tone` متناظر نمایش داده شوند: `success`/`warning`/`danger`/`accent`/`muted` — هرگز رنگ inline.
 
 ## همه داشبوردها ساخته شدند
@@ -63,14 +63,15 @@ npm run dev
 <DashboardShell title="پنل صاحب باشگاه" nav={NAV}>{children}</DashboardShell>
 ```
 
-## درباره `cookies()` در صفحات سرور
+## نشست امن و مسیر درخواست‌ها
 
-صفحات داشبورد که در سرور fetch می‌کنند (`members`, `trainers`, `cafeteria`, `tickets`, `super-admin`) با `cookies().get('accessToken')` توکن را می‌خوانند. این یک placeholder عمدی است: در پیاده‌سازی نهایی باید یک Route Handler (`/api/auth/callback`) بعد از لاگین، `accessToken` را در یک کوکی httpOnly ست کند؛ فعلاً فرم لاگین/ثبت‌نام (که کلاینتی هستند) آن را در `sessionStorage` می‌گذارند که فقط برای کامپوننت‌های کلاینتی (مثل `CrowdStatusWidget`, `MembersTable`) در دسترس است.
+ورود از مسیر BFF داخلی انجام می‌شود و access/refresh token فقط در کوکی‌های `httpOnly` و `SameSite=Lax` قرار می‌گیرند. توکن refresh هرگز به JavaScript مرورگر برگردانده نمی‌شود. درخواست‌های Client Component از `/api/backend/*` عبور می‌کنند و صفحات سرور توکن دسترسی را از کوکی می‌خوانند. مسیرهای داشبورد نیز بر اساس نقش کاربر هدایت می‌شوند.
+
+در صفحه عمومی هر باشگاه، دکمه «درخواست عضویت» پلن و باشگاه انتخاب‌شده را به ثبت‌نام منتقل می‌کند؛ بک‌اند عضویت را با وضعیت `PENDING_INSURANCE` می‌سازد تا پس از بارگذاری و تایید بیمه فعال شود.
 
 ## چیزی که در این بسته نیست (به‌صورت آگاهانه)
 
 - مدیریت state سراسری (Zustand/Redux) — برای این حجم صفحه فعلی نیاز نبود؛ هر صفحه خودش fetch می‌کند یا server component است.
 - اتصال WebSocket واقعی برای `CrowdStatusWidget` (فعلاً polling هر ۳۰ ثانیه) — نقطه اتصال به `attendance/crowd.gateway.ts` در بک‌اند در کامنت کد مشخص شده.
-- یکسان‌سازی توکن بین کوکی httpOnly و sessionStorage (توضیح بالا).
 - زیرصفحات داخلی هر پنل (مثل `gym-owner/revenue`, `trainer/ai-suggestions`) — فقط صفحه اصلی هر مسیر در نویگیشن ساخته شده؛ بقیه باید با همان الگوی این پروژه (MembershipCard + Badge + api.ts) تکمیل شوند.
 - تست‌های e2e (Playwright/Cypress).

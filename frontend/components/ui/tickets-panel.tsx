@@ -30,8 +30,7 @@ export function TicketsPanel({ initial }: { initial: TicketItem[] }) {
   async function advance(id: string, status: TicketItem['status']) {
     setBusyId(id);
     try {
-      const token = sessionStorage.getItem('accessToken') ?? undefined;
-      await api.patch(`/tickets/${id}`, { status }, { accessToken: token });
+      await api.patch(`/tickets/${id}`, { status });
       setTickets((list) => list.map((t) => (t.id === id ? { ...t, status } : t)));
     } catch {
       // surfaced via toast in a fuller implementation

@@ -11,7 +11,7 @@ interface TicketItem {
 }
 
 async function getTickets(): Promise<TicketItem[]> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<TicketItem[]>('/tickets', { accessToken: token });
   } catch {

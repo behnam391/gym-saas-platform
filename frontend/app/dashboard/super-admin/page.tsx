@@ -18,7 +18,7 @@ interface PendingNutritionist {
 }
 
 async function getOverview(): Promise<Overview | null> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<Overview>('/super-admin/overview', { accessToken: token });
   } catch {
@@ -27,7 +27,7 @@ async function getOverview(): Promise<Overview | null> {
 }
 
 async function getPendingNutritionists(): Promise<PendingNutritionist[]> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<PendingNutritionist[]>('/nutritionists/pending', { accessToken: token });
   } catch {

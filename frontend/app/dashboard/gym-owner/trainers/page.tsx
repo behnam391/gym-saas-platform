@@ -11,7 +11,7 @@ interface TrainerApplication {
 }
 
 async function getPending(): Promise<TrainerApplication[]> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<TrainerApplication[]>('/trainers/pending', { accessToken: token });
   } catch {

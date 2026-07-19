@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsEnum,
   IsDateString,
+  IsUUID,
   MinLength,
   Matches,
 } from 'class-validator';
@@ -55,6 +56,10 @@ export class RegisterDto {
   // Required only when the gym marketplace flow targets a specific gym
   // (e.g. "register & request membership at this gym"); null = platform-only signup.
   @IsOptional()
-  @IsString()
+  @IsUUID('4', { message: 'شناسه باشگاه نامعتبر است.' })
   tenantId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'شناسه پلن عضویت نامعتبر است.' })
+  membershipPlanId?: string;
 }

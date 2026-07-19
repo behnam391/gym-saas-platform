@@ -1,15 +1,20 @@
 import { IsArray, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class SearchTenantsDto {
   @IsOptional() @IsString() city?: string;
-  @IsOptional() @IsNumber() latitude?: number;
-  @IsOptional() @IsNumber() longitude?: number;
-  @IsOptional() @IsNumber() @Min(0) maxDistanceKm?: number;
-  @IsOptional() @IsNumber() @Min(0) minPrice?: number;
-  @IsOptional() @IsNumber() @Min(0) maxPrice?: number;
-  @IsOptional() @IsNumber() @Min(0) minRating?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() latitude?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() longitude?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) maxDistanceKm?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) minPrice?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) maxPrice?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) minRating?: number;
   @IsOptional() @IsIn(['MALE', 'FEMALE']) gender?: 'MALE' | 'FEMALE';
-  @IsOptional() @IsArray() @IsString({ each: true }) facilities?: string[];
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsString({ each: true })
+  facilities?: string[];
 }
 
 export class UpdateTenantProfileDto {

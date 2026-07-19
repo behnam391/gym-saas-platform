@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GenderDto } from '../dto/register.dto';
@@ -96,5 +96,89 @@ describe('AuthService.register', () => {
     const createArgs = db.user.create.mock.calls[0][0];
     expect(createArgs.data.passwordHash).not.toBe(baseDto.password);
     expect(createArgs.data.passwordHash).toMatch(/^\$2[aby]\$/); // bcrypt hash format
+  });
+
+  it('rejects a date of birth in the future', async () => {
+    const db = {
+      user: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+      },
+    };
+    const service = makeService(db);
+    await expect(
+      service.register({ ...baseDto, dateOfBirth: '2999-01-01' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+
+  it('creates a pending-insurance membership when registration starts from a gym plan', async () => {
+    const tenantId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const membershipPlanId = 'c56a4180-65aa-42ec-a945-5fd21dec0538';
+    const db = {
+      user: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({
+          id: 'new-user',
+          isMinor: false,
+          role: 'ATHLETE',
+          tenantId,
+        }),
+      },
+      tenant: { findFirst: jest.fn().mockResolvedValue({ id: tenantId }) },
+      membershipPlan: {
+        findFirst: jest.fn().mockResolvedValue({ id: membershipPlanId }),
+      },
+    };
+    const service = makeService(db);
+
+    const result = await service.register({
+      ...baseDto,
+      dateOfBirth: '1990-01-01',
+      tenantId,
+      membershipPlanId,
+    });
+
+    expect(result.membershipRequested).toBe(true);
+    expect(db.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId,
+          memberships: {
+            create: {
+              tenantId,
+              planId: membershipPlanId,
+              status: 'PENDING_INSURANCE',
+            },
+          },
+        }),
+      }),
+    );
+  });
+});
+
+describe('AuthService.refresh', () => {
+  it('rejects a replay that loses the atomic refresh-token rotation race', async () => {
+    const db = {
+      refreshToken: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'token-1',
+          expiresAt: new Date(Date.now() + 60_000),
+          user: {
+            id: 'user-1',
+            role: 'ATHLETE',
+            tenantId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        create: jest.fn(),
+      },
+    };
+    const service = makeService(db);
+
+    await expect(service.refresh('already-used-token')).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(db.refreshToken.create).not.toHaveBeenCalled();
   });
 });

@@ -12,7 +12,7 @@ interface Product {
 }
 
 async function getProducts(): Promise<Product[]> {
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<Product[]>('/cafeteria/products', { accessToken: token });
   } catch {

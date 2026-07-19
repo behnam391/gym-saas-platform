@@ -16,7 +16,7 @@ async function getMembers(): Promise<Member[]> {
   // real app the access token would come from an httpOnly cookie set during
   // login via a Route Handler. Shown here as a placeholder fetch so the
   // page renders meaningfully even with an empty/expired token.
-  const token = cookies().get('accessToken')?.value;
+  const token = (await cookies()).get('accessToken')?.value;
   try {
     return await api.get<Member[]>('/tenants/me/members', { accessToken: token });
   } catch {

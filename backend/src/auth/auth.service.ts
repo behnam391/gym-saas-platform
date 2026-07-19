@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -9,7 +10,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { calculateAge, isMinor as checkIsMinor } from '../common/age.util';
+import { isMinor as checkIsMinor } from '../common/age.util';
 
 @Injectable()
 export class AuthService {
@@ -39,8 +40,39 @@ export class AuthService {
       );
     }
 
+    if (dto.membershipPlanId && !dto.tenantId) {
+      throw new BadRequestException('انتخاب پلن عضویت بدون باشگاه امکان‌پذیر نیست.');
+    }
+
+    let selectedPlan: { id: string } | null = null;
+    if (dto.tenantId) {
+      const tenant = await db.tenant.findFirst({
+        where: { id: dto.tenantId, isActive: true, isVerified: true },
+        select: { id: true },
+      });
+      if (!tenant) {
+        throw new BadRequestException('باشگاه انتخاب‌شده فعال یا تاییدشده نیست.');
+      }
+
+      if (dto.membershipPlanId) {
+        selectedPlan = await db.membershipPlan.findFirst({
+          where: {
+            id: dto.membershipPlanId,
+            tenantId: dto.tenantId,
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        if (!selectedPlan) {
+          throw new BadRequestException('پلن عضویت انتخاب‌شده معتبر نیست.');
+        }
+      }
+    }
+
     const dob = new Date(dto.dateOfBirth);
-    const age = calculateAge(dob);
+    if (Number.isNaN(dob.getTime()) || dob > new Date()) {
+      throw new BadRequestException('تاریخ تولد نمی‌تواند در آینده باشد.');
+    }
     const isMinor = checkIsMinor(dob);
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -65,6 +97,17 @@ export class AuthService {
         city: dto.city,
         address: dto.address,
         athleteProfile: { create: {} },
+        ...(selectedPlan && dto.tenantId
+          ? {
+              memberships: {
+                create: {
+                  tenantId: dto.tenantId,
+                  planId: selectedPlan.id,
+                  status: 'PENDING_INSURANCE',
+                },
+              },
+            }
+          : {}),
       },
       select: { id: true, role: true, tenantId: true, isMinor: true },
     });
@@ -72,9 +115,14 @@ export class AuthService {
     return {
       userId: user.id,
       isMinor: user.isMinor,
+      membershipRequested: Boolean(selectedPlan),
       message: user.isMinor
-        ? 'ثبت‌نام انجام شد. حساب کاربری تا تایید رضایت‌نامه والدین محدود است.'
-        : 'ثبت‌نام با موفقیت انجام شد.',
+        ? selectedPlan
+          ? 'ثبت‌نام و درخواست عضویت انجام شد. حساب تا تایید رضایت‌نامه والدین و بیمه ورزشی محدود است.'
+          : 'ثبت‌نام انجام شد. حساب کاربری تا تایید رضایت‌نامه والدین محدود است.'
+        : selectedPlan
+          ? 'ثبت‌نام و درخواست عضویت با موفقیت انجام شد. برای فعال‌سازی، بیمه ورزشی را بارگذاری کنید.'
+          : 'ثبت‌نام با موفقیت انجام شد.',
     };
   }
 
@@ -110,11 +158,16 @@ export class AuthService {
       throw new UnauthorizedException('نشست منقضی شده است. دوباره وارد شوید.');
     }
 
-    // Rotate: revoke the used refresh token, issue a brand new pair.
-    await db.refreshToken.update({
-      where: { id: stored.id },
+    // Rotate with a compare-and-set so two concurrent refresh requests cannot
+    // both reuse the same token. Exactly one request may change revokedAt from
+    // null; every replay loses the race and is rejected.
+    const revoked = await db.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    if (revoked.count !== 1) {
+      throw new UnauthorizedException('نشست منقضی شده است. دوباره وارد شوید.');
+    }
 
     return this.issueTokens(
       db,
@@ -143,8 +196,8 @@ export class AuthService {
     const payload = { sub: userId, role, tenantId };
 
     const accessToken = this.jwt.sign(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_TTL ?? '15m',
+      secret: process.env.JWT_ACCESS_SECRET!,
+      expiresIn: Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 900),
     });
 
     const refreshTokenRaw = crypto.randomBytes(48).toString('hex');

@@ -9,6 +9,9 @@ if [ ! -f .env ]; then
 fi
 set -a; source .env; set +a
 
+echo "==> Starting Postgres and Redis..."
+docker compose up -d postgres redis
+
 echo "==> Waiting for Postgres to be healthy..."
 until docker compose exec -T postgres pg_isready -U gym_app -d gym_saas >/dev/null 2>&1; do
   sleep 1
@@ -19,6 +22,9 @@ docker compose exec -T postgres psql -U gym_app -d gym_saas \
   -v gym_app_password="'${POSTGRES_PASSWORD}'" \
   -v gym_admin_password="'${POSTGRES_ADMIN_PASSWORD}'" \
   -f /dev/stdin < postgres-bootstrap.sql
+
+echo "==> Building application images..."
+docker compose build backend frontend
 
 echo "==> Running Prisma migrations..."
 docker compose run --rm backend npx prisma migrate deploy

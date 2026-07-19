@@ -61,7 +61,7 @@ export class CafeteriaService {
    * inside the same transaction as the order creation, so two concurrent
    * orders can never oversell the last unit of a product.
    */
-  placeOrder(userId: string, dto: PlaceOrderDto) {
+  async placeOrder(userId: string, dto: PlaceOrderDto) {
     if (dto.items.length === 0) {
       throw new BadRequestException('سفارش باید حداقل یک کالا داشته باشد.');
     }

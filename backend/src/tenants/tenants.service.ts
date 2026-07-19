@@ -41,19 +41,19 @@ export class TenantsService {
       where: {
         isActive: true,
         isVerified: true,
-        ...(dto.city ? { city: dto.city } : {}),
+        ...(dto.city ? { city: { contains: dto.city, mode: 'insensitive' as const } } : {}),
         ...(dto.gender ? { OR: [{ genderPolicy: dto.gender }, { genderPolicy: null }] } : {}),
         ...(dto.minRating ? { trustScore: { gte: dto.minRating } } : {}),
         ...(dto.facilities?.length
           ? { facilities: { some: { name: { in: dto.facilities } } } }
           : {}),
-        ...(dto.minPrice || dto.maxPrice
+        ...(dto.minPrice !== undefined || dto.maxPrice !== undefined
           ? {
               membershipPlans: {
                 some: {
                   isActive: true,
-                  ...(dto.minPrice ? { price: { gte: dto.minPrice } } : {}),
-                  ...(dto.maxPrice ? { price: { lte: dto.maxPrice } } : {}),
+                  ...(dto.minPrice !== undefined ? { price: { gte: dto.minPrice } } : {}),
+                  ...(dto.maxPrice !== undefined ? { price: { lte: dto.maxPrice } } : {}),
                 },
               },
             }
@@ -66,12 +66,12 @@ export class TenantsService {
       },
     });
 
-    if (dto.latitude && dto.longitude) {
+    if (dto.latitude !== undefined && dto.longitude !== undefined) {
       return tenants
         .map((t) => ({
           ...t,
           distanceKm:
-            t.latitude && t.longitude
+            t.latitude !== null && t.longitude !== null
               ? haversineKm(dto.latitude!, dto.longitude!, t.latitude, t.longitude)
               : null,
         }))
@@ -90,19 +90,65 @@ export class TenantsService {
         facilities: true,
         galleryImages: { orderBy: { sortOrder: 'asc' } },
         membershipPlans: { where: { isActive: true } },
+        users: {
+          where: { role: { in: ['TRAINER', 'NUTRITIONIST'] }, isActive: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            trainerProfile: { select: { id: true, bio: true, specialties: true, status: true } },
+            nutritionistProfile: { select: { id: true, bio: true, status: true, profileImageUrl: true } },
+          },
+        },
+        reviews: {
+          where: { targetType: 'GYM' },
+          include: { author: { select: { firstName: true, lastName: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
       },
     });
-    if (!tenant || !tenant.isActive) throw new NotFoundException('باشگاه یافت نشد.');
-    return tenant;
+    if (!tenant || !tenant.isActive || !tenant.isVerified) {
+      throw new NotFoundException('باشگاه یافت نشد.');
+    }
+    const { users, reviews, ...profile } = tenant;
+    return {
+      ...profile,
+      trainers: users
+        .filter((user) => user.role === 'TRAINER' && user.trainerProfile?.status === 'APPROVED')
+        .map((user) => ({
+          id: user.trainerProfile!.id,
+          name: `${user.firstName} ${user.lastName}`,
+          specialty: user.trainerProfile!.specialties.join('، ') || 'مربی ورزشی',
+          bio: user.trainerProfile!.bio,
+        })),
+      nutritionists: users
+        .filter((user) => user.role === 'NUTRITIONIST' && user.nutritionistProfile?.status === 'APPROVED')
+        .map((user) => ({
+          id: user.nutritionistProfile!.id,
+          name: `${user.firstName} ${user.lastName}`,
+          specialty: 'تغذیه ورزشی',
+          bio: user.nutritionistProfile!.bio,
+          profileImageUrl: user.nutritionistProfile!.profileImageUrl,
+        })),
+      reviews: reviews.map((review) => ({
+        id: review.id,
+        author: `${review.author.firstName} ${review.author.lastName}`,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+      })),
+    };
   }
 
   updateMyProfile(dto: UpdateTenantProfileDto) {
     const tenantId = this.tenantContext.requireTenantId();
-    // Profile fields live on Tenant itself (not a tenant-scoped child table),
-    // so this still goes through the gym owner's own tenant id explicitly,
-    // via the platform connection (Tenant has no RLS policy — see rls-policies.sql).
-    const db = this.prisma.forPlatform();
-    return db.tenant.update({ where: { id: tenantId }, data: dto as any });
+    // Tenant itself is global for marketplace reads, so the trusted tenant id
+    // from the verified JWT is still applied explicitly for this write.
+    return this.prisma.forTenant((tx) =>
+      tx.tenant.update({ where: { id: tenantId }, data: dto as any }),
+    );
   }
 
   createMembershipPlan(dto: CreateMembershipPlanDto) {
@@ -125,6 +171,13 @@ export class TenantsService {
           isMinor: true,
           isRestricted: true,
           createdAt: true,
+          insuranceDocs: { orderBy: { createdAt: 'desc' }, take: 1 },
+          parentalConsent: true,
+          memberships: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            include: { plan: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -135,7 +188,7 @@ export class TenantsService {
     return this.prisma.forTenant(async (tx) => {
       const doc = await tx.insuranceDocument.findUnique({ where: { id: documentId } });
       if (!doc) throw new NotFoundException('سند بیمه یافت نشد.');
-      return tx.insuranceDocument.update({
+      const updated = await tx.insuranceDocument.update({
         where: { id: documentId },
         data: {
           status: dto.status,
@@ -144,6 +197,13 @@ export class TenantsService {
           rejectionReason: dto.status === 'REJECTED' ? dto.rejectionReason : null,
         },
       });
+      if (dto.status === 'APPROVED') {
+        await tx.membership.updateMany({
+          where: { userId: doc.userId, status: 'PENDING_INSURANCE' },
+          data: { status: 'PENDING_PAYMENT' },
+        });
+      }
+      return updated;
     });
   }
 

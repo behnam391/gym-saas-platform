@@ -18,8 +18,7 @@ export default function ReceptionOverviewPage() {
     setMessage(null);
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('accessToken') ?? undefined;
-      await api.post('/attendance/check-in', { userId, method: 'MANUAL' }, { accessToken: token });
+      await api.post('/attendance/check-in', { userId, method: 'MANUAL' });
       setMessage('حضور با موفقیت ثبت شد.');
       setUserId('');
     } catch (err) {

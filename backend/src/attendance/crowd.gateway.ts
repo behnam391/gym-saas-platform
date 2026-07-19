@@ -5,12 +5,12 @@ import {
   OnGatewayConnection,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { JwtService } from '@nestjs/jwt';
 
 /**
- * Clients join a room named after their tenantId (extracted from their own
- * verified JWT on the client side / passed at connection time and verified
- * server-side in a real implementation — omitted here for brevity, but the
- * same JWT verification used in TenantContextMiddleware applies).
+ * Clients join only the room encoded in their verified access token. A
+ * client-supplied tenant id is never trusted, preventing cross-gym crowd
+ * monitoring even if a browser tampers with the WebSocket handshake.
  *
  * A scheduled job (e.g. a Cron + Redis pub/sub fan-out across instances)
  * calls `broadcastCrowdLevel()` every 30-60s per tenant.
@@ -18,18 +18,49 @@ import { Server, Socket } from 'socket.io';
 @WebSocketGateway({ cors: { origin: process.env.CORS_ORIGIN } })
 export class CrowdGateway implements OnGatewayConnection {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
+
+  constructor(private readonly jwt: JwtService) {}
 
   handleConnection(client: Socket) {
-    const tenantId = client.handshake.query.tenantId as string;
-    if (tenantId) {
-      client.join(`tenant:${tenantId}`);
+    const authToken = client.handshake.auth?.token;
+    const authorization = client.handshake.headers.authorization;
+    const token =
+      typeof authToken === 'string'
+        ? authToken
+        : typeof authorization === 'string' && authorization.startsWith('Bearer ')
+          ? authorization.slice(7)
+          : null;
+    if (!token) {
+      client.disconnect(true);
+      return;
+    }
+
+    try {
+      const payload = this.jwt.verify<{ sub: string; role: string; tenantId: string | null }>(token, {
+        secret: process.env.JWT_ACCESS_SECRET,
+      });
+      if (!payload.tenantId) {
+        client.disconnect(true);
+        return;
+      }
+      client.data.userId = payload.sub;
+      client.data.tenantId = payload.tenantId;
+      client.join(`tenant:${payload.tenantId}`);
+    } catch {
+      client.disconnect(true);
     }
   }
 
   @SubscribeMessage('join-tenant')
-  joinTenant(client: Socket, tenantId: string) {
+  joinTenant(client: Socket) {
+    const tenantId = client.data.tenantId;
+    if (typeof tenantId !== 'string') {
+      client.disconnect(true);
+      return { joined: false };
+    }
     client.join(`tenant:${tenantId}`);
+    return { joined: true, tenantId };
   }
 
   broadcastCrowdLevel(
