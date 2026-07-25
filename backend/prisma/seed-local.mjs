@@ -414,32 +414,51 @@ await prisma.financialAccount.upsert({
   update: { iban: 'IR120170000000123456789012', cardLast4: '3912', isDefault: true },
 });
 
-await prisma.heroSlide.upsert({
-  where: { id: '80000000-0000-4000-8000-000000000001' },
-  create: {
+const heroSlides = [
+  {
     id: '80000000-0000-4000-8000-000000000001',
     eyebrow: 'قدرت از یک تصمیم شروع می‌شود',
     title: 'قهرمان خودت باش',
     subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
-    imageUrl: 'https://images.pexels.com/photos/32085332/pexels-photo-32085332.jpeg?cs=srgb&fm=jpg&w=1920&h=1080&fit=crop',
-    imageCredit: 'Photo by foad shariyati on Pexels',
+    imageUrl: '/images/hero/hero-bodybuilder-v1.webp',
+    imageCredit: 'تصویر اختصاصی باشگاه‌یار',
     ctaLabel: 'شروع به‌عنوان ورزشکار',
     ctaUrl: '/access/athlete',
     sortOrder: 0,
     isActive: true,
   },
-  update: {
-    eyebrow: 'قدرت از یک تصمیم شروع می‌شود',
-    title: 'قهرمان خودت باش',
-    subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
-    imageUrl: 'https://images.pexels.com/photos/32085332/pexels-photo-32085332.jpeg?cs=srgb&fm=jpg&w=1920&h=1080&fit=crop',
-    imageCredit: 'Photo by foad shariyati on Pexels',
-    ctaLabel: 'شروع به‌عنوان ورزشکار',
-    ctaUrl: '/access/athlete',
-    sortOrder: 0,
+  {
+    id: '80000000-0000-4000-8000-000000000002',
+    eyebrow: 'قدرت واقعی، ساخته می‌شود',
+    title: 'هر تکرار، یک قدم جلوتر',
+    subtitle: 'برنامه درست، مربی تأییدشده و ثبت دقیق پیشرفت؛ همه‌چیز برای رسیدن به هدف آماده است.',
+    imageUrl: '/images/hero/hero-deadlift-v1.webp',
+    imageCredit: 'تصویر اختصاصی باشگاه‌یار',
+    ctaLabel: 'باشگاه مناسبم را پیدا کن',
+    ctaUrl: '/',
+    sortOrder: 1,
     isActive: true,
   },
-});
+  {
+    id: '80000000-0000-4000-8000-000000000003',
+    eyebrow: 'تمرین هوشمند، نتیجه ماندگار',
+    title: 'انرژی‌ات را آزاد کن',
+    subtitle: 'از انتخاب باشگاه تا مشاوره و برنامه تمرینی، مسیر حرفه‌ای تو در باشگاه‌یار ادامه دارد.',
+    imageUrl: '/images/hero/hero-battle-rope-v1.webp',
+    imageCredit: 'تصویر اختصاصی باشگاه‌یار',
+    ctaLabel: 'مشاهده متخصصان',
+    ctaUrl: '/access/athlete',
+    sortOrder: 2,
+    isActive: true,
+  },
+];
+for (const slide of heroSlides) {
+  await prisma.heroSlide.upsert({
+    where: { id: slide.id },
+    create: slide,
+    update: slide,
+  });
+}
 
 const platformProfessionals = [
   {

@@ -21,8 +21,8 @@ const FALLBACK: HeroSlide = {
   eyebrow: 'قدرت از یک تصمیم شروع می‌شود',
   title: 'قهرمان خودت باش',
   subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
-  imageUrl: 'https://images.pexels.com/photos/32085332/pexels-photo-32085332.jpeg?cs=srgb&fm=jpg&w=1920&h=1080&fit=crop',
-  imageCredit: 'Photo by foad shariyati on Pexels',
+  imageUrl: '/images/hero/hero-bodybuilder-v1.webp',
+  imageCredit: 'تصویر اختصاصی باشگاه‌یار',
   ctaLabel: 'شروع به‌عنوان ورزشکار',
   ctaUrl: '/access/athlete',
 };
