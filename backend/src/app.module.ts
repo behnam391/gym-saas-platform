@@ -22,6 +22,10 @@ import { validateEnv } from './config/env.validation';
 import { AthletesModule } from './athletes/athletes.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MessagesModule } from './messages/messages.module';
+import { ProfilesModule } from './profiles/profiles.module';
+import { FinancialAccountsModule } from './financial-accounts/financial-accounts.module';
+import { AttendanceDevicesModule } from './attendance-devices/attendance-devices.module';
+import { AdvertisementsModule } from './advertisements/advertisements.module';
 
 @Module({
   imports: [
@@ -46,6 +50,10 @@ import { MessagesModule } from './messages/messages.module';
     AthletesModule,
     PaymentsModule,
     MessagesModule,
+    ProfilesModule,
+    FinancialAccountsModule,
+    AttendanceDevicesModule,
+    AdvertisementsModule,
   ],
 })
 export class AppModule implements NestModule {

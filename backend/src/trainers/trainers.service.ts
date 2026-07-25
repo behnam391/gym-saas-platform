@@ -29,6 +29,12 @@ export class TrainersService {
     );
   }
 
+  getMine(userId: string) {
+    return this.prisma.forTenant((tx) =>
+      tx.trainerProfile.findUnique({ where: { userId } }),
+    );
+  }
+
   listPending() {
     return this.prisma.forTenant((tx) =>
       tx.trainerProfile.findMany({
@@ -67,12 +73,10 @@ export class TrainersService {
       const athlete = await tx.athleteProfile.findUnique({ where: { userId: dto.athleteUserId } });
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
 
-      return tx.trainerStudent.create({
-        data: {
-          trainerId: trainer.id,
-          athleteId: athlete.id,
-          userId: dto.athleteUserId,
-        },
+      return tx.trainerStudent.upsert({
+        where: { trainerId_athleteId: { trainerId: trainer.id, athleteId: athlete.id } },
+        create: { trainerId: trainer.id, athleteId: athlete.id, userId: dto.athleteUserId },
+        update: { userId: dto.athleteUserId, isActive: true, endedAt: null },
       });
     });
   }

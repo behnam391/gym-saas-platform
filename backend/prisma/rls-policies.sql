@@ -25,7 +25,9 @@ DECLARE
     'User', 'MembershipPlan', 'Membership', 'Payment', 'Attendance',
     'CrowdSnapshot', 'TrainingProgram', 'DietPlan', 'ProductCategory',
     'CafeteriaProduct', 'Order', 'Ticket', 'Review', 'Notification',
-    'Message', 'AuditLog', 'TenantGalleryImage', 'TenantFacility'
+    'Message', 'AuditLog', 'TenantGalleryImage', 'TenantFacility',
+    'Advertisement', 'AttendanceDevice', 'AttendanceCredential',
+    'FinancialAccount', 'TenantSubscription'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tenant_scoped_tables LOOP

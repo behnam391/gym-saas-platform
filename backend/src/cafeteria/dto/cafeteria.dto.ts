@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateProductDto {
@@ -48,4 +48,9 @@ export class PlaceOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderItemInput)
   items: OrderItemInput[];
+}
+
+export class UpdateOrderStatusDto {
+  @IsIn(['PLACED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED'])
+  status: 'PLACED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
 }

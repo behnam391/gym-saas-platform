@@ -17,6 +17,12 @@ export class TrainersController {
     return this.trainersService.apply(user.userId, dto);
   }
 
+  @Get('me')
+  @Roles('TRAINER')
+  getMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.trainersService.getMine(user.userId);
+  }
+
   @Get('pending')
   @Roles('GYM_OWNER')
   listPending() {

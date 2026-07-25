@@ -51,7 +51,7 @@ enum InsuranceStatus {
 }
 
 enum MembershipStatus {
-  PENDING_INSURANCE   // blocked until insurance approved
+  PENDING_INSURANCE // blocked until insurance approved
   PENDING_PAYMENT
   ACTIVE
   EXPIRED
@@ -76,6 +76,9 @@ enum PaymentMethod {
 enum AttendanceMethod {
   QR_CODE
   MEMBERSHIP_CARD
+  FINGERPRINT
+  FACE_RECOGNITION
+  NFC_PHONE
   MANUAL
 }
 
@@ -154,51 +157,98 @@ enum NotificationChannel {
   PUSH
 }
 
+enum AdvertisementStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  EXPIRED
+}
+
+enum AttendanceDeviceType {
+  CARD
+  FINGERPRINT
+  FACE_RECOGNITION
+  NFC_PHONE
+}
+
+enum AttendanceDeviceStatus {
+  PENDING
+  CONNECTED
+  OFFLINE
+  DISABLED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  CONFIGURED
+  HEALTHY
+  DEGRADED
+  DISABLED
+}
+
 // ============================================================================
 // TENANT (GYM) — root of all tenant-scoped data
 // ============================================================================
 
 model Tenant {
-  id              String   @id @default(uuid())
-  slug            String   @unique // used in public marketplace URLs
-  name            String
-  description     String?  @db.Text
-  logoUrl         String?
-  coverImageUrl   String?
-  city            String
-  address         String
-  latitude        Float?
-  longitude       Float?
-  workingHours    Json?    // structured weekly hours
-  genderPolicy    Gender?  // null = mixed
-  phone           String?
-  email           String?
-  socialLinks     Json?
-  isActive        Boolean  @default(true)
-  isVerified      Boolean  @default(false)
-  trustScore      Float    @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  slug          String   @unique // used in public marketplace URLs
+  name          String
+  description   String?  @db.Text
+  logoUrl       String?
+  coverImageUrl String?
+  province      String?
+  county        String?
+  city          String
+  address       String
+  latitude      Float?
+  longitude     Float?
+  workingHours  Json? // structured weekly hours
+  genderPolicy  Gender? // null = mixed
+  phone         String?
+  email         String?
+  socialLinks   Json?
+  isActive      Boolean  @default(true)
+  isVerified    Boolean  @default(false)
+  trustScore    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  galleryImages   TenantGalleryImage[]
-  facilities      TenantFacility[]
-  membershipPlans MembershipPlan[]
-  users           User[]
-  memberships     Membership[]
-  attendances     Attendance[]
-  trainingPrograms TrainingProgram[]
-  dietPlans       DietPlan[]
-  productCategories ProductCategory[]
-  products        CafeteriaProduct[]
-  orders          Order[]
-  payments        Payment[]
-  tickets         Ticket[]
-  reviews         Review[]
-  notifications   Notification[]
-  auditLogs       AuditLog[]
-  crowdSnapshots  CrowdSnapshot[]
-  messages        Message[]
+  galleryImages         TenantGalleryImage[]
+  facilities            TenantFacility[]
+  membershipPlans       MembershipPlan[]
+  users                 User[]
+  memberships           Membership[]
+  attendances           Attendance[]
+  trainingPrograms      TrainingProgram[]
+  dietPlans             DietPlan[]
+  productCategories     ProductCategory[]
+  products              CafeteriaProduct[]
+  orders                Order[]
+  payments              Payment[]
+  tickets               Ticket[]
+  reviews               Review[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  crowdSnapshots        CrowdSnapshot[]
+  messages              Message[]
+  advertisements        Advertisement[]
+  attendanceDevices     AttendanceDevice[]
+  attendanceCredentials AttendanceCredential[]
+  financialAccounts     FinancialAccount[]
+  subscription          TenantSubscription?
 
+  @@index([province, city])
   @@index([city])
   @@index([isActive, isVerified])
 }
@@ -216,9 +266,9 @@ model TenantGalleryImage {
 }
 
 model TenantFacility {
-  id       String @id @default(uuid())
+  id       String  @id @default(uuid())
   tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name     String // e.g. "سونا", "استخر", "پارکینگ"
   icon     String?
 
@@ -226,18 +276,18 @@ model TenantFacility {
 }
 
 model MembershipPlan {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  title       String
-  description String?  @db.Text
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.Text
   durationDays Int
-  price        Decimal @db.Decimal(12, 2)
-  isActive     Boolean @default(true)
+  price        Decimal  @db.Decimal(12, 2)
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships  Membership[]
+  memberships Membership[]
 
   @@index([tenantId])
 }
@@ -247,53 +297,56 @@ model MembershipPlan {
 // ============================================================================
 
 model User {
-  id            String   @id @default(uuid())
+  id       String  @id @default(uuid())
   // null for SUPER_ADMIN only; every other role MUST belong to exactly one tenant
-  tenantId      String?
-  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  role          Role
+  role Role
 
-  firstName     String
-  lastName      String
-  nationalId    String   @unique
-  mobile        String   @unique
-  email         String?  @unique
-  passwordHash  String
+  firstName    String
+  lastName     String
+  nationalId   String  @unique
+  mobile       String  @unique
+  email        String? @unique
+  passwordHash String
 
-  gender        Gender
-  dateOfBirth   DateTime
-  isMinor       Boolean  @default(false) // derived server-side from dateOfBirth
-  city          String?
-  address       String?
+  gender          Gender
+  dateOfBirth     DateTime
+  isMinor         Boolean  @default(false) // derived server-side from dateOfBirth
+  city            String?
+  address         String?
+  profileImageUrl String?
 
-  isActive      Boolean  @default(true)
-  isRestricted  Boolean  @default(false) // e.g. minor pending parental consent
-  emailVerifiedAt DateTime?
+  isActive         Boolean   @default(true)
+  isRestricted     Boolean   @default(false) // e.g. minor pending parental consent
+  emailVerifiedAt  DateTime?
   mobileVerifiedAt DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  refreshTokens   RefreshToken[]
-  athleteProfile  AthleteProfile?
-  trainerProfile  TrainerProfile?
-  nutritionistProfile NutritionistProfile?
-  parentalConsent ParentalConsent?
-  insuranceDocs   InsuranceDocument[]
-  memberships     Membership[]
-  attendances     Attendance[]            @relation("AttendanceUser")
-  checkedInBy     Attendance[]            @relation("AttendanceOperator")
-  ordersPlaced    Order[]
-  paymentsMade    Payment[]
-  ticketsCreated  Ticket[]                @relation("TicketCreator")
-  ticketsAssigned Ticket[]                @relation("TicketAssignee")
-  reviewsWritten  Review[]                @relation("ReviewAuthor")
-  notifications   Notification[]
-  sentMessages    Message[]               @relation("MessageSender")
-  auditLogs       AuditLog[]
-  trainerStudents TrainerStudent[]        @relation("StudentSide")
-  nutritionistClients NutritionistClient[] @relation("ClientSide")
+  refreshTokens         RefreshToken[]
+  athleteProfile        AthleteProfile?
+  trainerProfile        TrainerProfile?
+  nutritionistProfile   NutritionistProfile?
+  parentalConsent       ParentalConsent?
+  insuranceDocs         InsuranceDocument[]
+  memberships           Membership[]
+  attendances           Attendance[]           @relation("AttendanceUser")
+  checkedInBy           Attendance[]           @relation("AttendanceOperator")
+  ordersPlaced          Order[]
+  paymentsMade          Payment[]
+  ticketsCreated        Ticket[]               @relation("TicketCreator")
+  ticketsAssigned       Ticket[]               @relation("TicketAssignee")
+  reviewsWritten        Review[]               @relation("ReviewAuthor")
+  notifications         Notification[]
+  sentMessages          Message[]              @relation("MessageSender")
+  auditLogs             AuditLog[]
+  trainerStudents       TrainerStudent[]       @relation("StudentSide")
+  nutritionistClients   NutritionistClient[]   @relation("ClientSide")
+  financialAccounts     FinancialAccount[]
+  attendanceCredentials AttendanceCredential[]
 
   @@index([tenantId, role])
   @@index([nationalId])
@@ -301,48 +354,48 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }
 
 model ParentalConsent {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guardianName String
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guardianName       String
   guardianNationalId String
-  guardianMobile String
-  documentUrl  String
-  status       VerificationStatus @default(PENDING)
-  reviewedById String?
-  reviewedAt   DateTime?
-  rejectionReason String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  guardianMobile     String
+  documentUrl        String
+  status             VerificationStatus @default(PENDING)
+  reviewedById       String?
+  reviewedAt         DateTime?
+  rejectionReason    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 }
 
 model InsuranceDocument {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documentUrl String
-  provider   String?
-  policyNumber String?
-  validFrom  DateTime?
-  validUntil DateTime?
-  status     InsuranceStatus @default(PENDING)
-  reviewedById String?
-  reviewedAt   DateTime?
+  id              String          @id @default(uuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentUrl     String
+  provider        String?
+  policyNumber    String?
+  validFrom       DateTime?
+  validUntil      DateTime?
+  status          InsuranceStatus @default(PENDING)
+  reviewedById    String?
+  reviewedAt      DateTime?
   rejectionReason String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([userId, status])
 }
@@ -352,12 +405,12 @@ model InsuranceDocument {
 // ============================================================================
 
 model AthleteProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  heightCm      Float?
-  weightKg      Float?
+  heightCm Float?
+  weightKg Float?
 
   trainingHistory String? @db.Text
   injuries        String? @db.Text
@@ -365,50 +418,50 @@ model AthleteProfile {
   medications     String? @db.Text
   allergies       String? @db.Text
 
-  fitnessGoal     FitnessGoal?
-  trainingLevel   TrainingLevel?
-  activityLevel   String? // e.g. sedentary, light, moderate, very_active
+  fitnessGoal   FitnessGoal?
+  trainingLevel TrainingLevel?
+  activityLevel String? // e.g. sedentary, light, moderate, very_active
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  measurements  BodyMeasurement[]
-  aiSuggestions AiSuggestion[]
-  programAssignments TrainingProgram[] @relation("AthleteProgram")
-  dietAssignments    DietPlan[]        @relation("AthleteDiet")
-  goals         Goal[]
-  trainerLinks  TrainerStudent[]
-  nutritionistLinks NutritionistClient[]
+  measurements       BodyMeasurement[]
+  aiSuggestions      AiSuggestion[]
+  programAssignments TrainingProgram[]    @relation("AthleteProgram")
+  dietAssignments    DietPlan[]           @relation("AthleteDiet")
+  goals              Goal[]
+  trainerLinks       TrainerStudent[]
+  nutritionistLinks  NutritionistClient[]
 }
 
 model BodyMeasurement {
-  id          String   @id @default(uuid())
-  athleteId   String
-  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  id        String         @id @default(uuid())
+  athleteId String
+  athlete   AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
 
-  recordedAt  DateTime @default(now())
-  weightKg    Float?
-  waistCm     Float?
-  chestCm     Float?
-  armCm       Float?
-  thighCm     Float?
-  calfCm      Float?
-  neckCm      Float?
-  shoulderCm  Float?
+  recordedAt     DateTime @default(now())
+  weightKg       Float?
+  waistCm        Float?
+  chestCm        Float?
+  armCm          Float?
+  thighCm        Float?
+  calfCm         Float?
+  neckCm         Float?
+  shoulderCm     Float?
   bodyFatPercent Float?
 
   @@index([athleteId, recordedAt])
 }
 
 model Goal {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   athleteId   String
   athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
   type        FitnessGoal
   targetValue Float?
   targetDate  DateTime?
-  achieved    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  achieved    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
 
   @@index([athleteId])
 }
@@ -418,69 +471,69 @@ model Goal {
 // ============================================================================
 
 model TrainerProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?  @db.Text
-  specialties String[]
-  certificateUrl String?
-  status      VerificationStatus @default(PENDING) // approved by Gym Owner
-  approvedById String?
-  approvedAt  DateTime?
+  id              String             @id @default(uuid())
+  userId          String             @unique
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?            @db.Text
+  specialties     String[]
+  certificateUrl  String?
+  status          VerificationStatus @default(PENDING) // approved by Gym Owner
+  approvedById    String?
+  approvedAt      DateTime?
   rejectionReason String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  students    TrainerStudent[]
-  programs    TrainingProgram[] @relation("TrainerPrograms")
+  students TrainerStudent[]
+  programs TrainingProgram[] @relation("TrainerPrograms")
 }
 
 model NutritionistProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?  @db.Text
+  id               String             @id @default(uuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio              String?            @db.Text
   nationalIdDocUrl String
   certificateUrl   String
   profileImageUrl  String?
-  status      VerificationStatus @default(PENDING) // approved ONLY by Super Admin
-  approvedById String?
-  approvedAt  DateTime?
-  rejectionReason String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status           VerificationStatus @default(PENDING) // approved ONLY by Super Admin
+  approvedById     String?
+  approvedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
-  clients     NutritionistClient[]
-  dietPlans   DietPlan[] @relation("NutritionistDiets")
+  clients   NutritionistClient[]
+  dietPlans DietPlan[]           @relation("NutritionistDiets")
 }
 
 model TrainerStudent {
-  id          String   @id @default(uuid())
-  trainerId   String
-  trainer     TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
-  athleteId   String
-  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  userId      String   // denormalized for direct User relation/listing
-  user        User     @relation("StudentSide", fields: [userId], references: [id], onDelete: Cascade)
-  startedAt   DateTime @default(now())
-  endedAt     DateTime?
-  isActive    Boolean  @default(true)
+  id        String         @id @default(uuid())
+  trainerId String
+  trainer   TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  userId    String // denormalized for direct User relation/listing
+  user      User           @relation("StudentSide", fields: [userId], references: [id], onDelete: Cascade)
+  startedAt DateTime       @default(now())
+  endedAt   DateTime?
+  isActive  Boolean        @default(true)
 
   @@unique([trainerId, athleteId])
   @@index([trainerId])
 }
 
 model NutritionistClient {
-  id            String   @id @default(uuid())
+  id             String              @id @default(uuid())
   nutritionistId String
-  nutritionist  NutritionistProfile @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
-  athleteId     String
-  athlete       AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User     @relation("ClientSide", fields: [userId], references: [id], onDelete: Cascade)
-  startedAt     DateTime @default(now())
-  endedAt       DateTime?
-  isActive      Boolean  @default(true)
+  nutritionist   NutritionistProfile @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  athleteId      String
+  athlete        AthleteProfile      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                @relation("ClientSide", fields: [userId], references: [id], onDelete: Cascade)
+  startedAt      DateTime            @default(now())
+  endedAt        DateTime?
+  isActive       Boolean             @default(true)
 
   @@unique([nutritionistId, athleteId])
   @@index([nutritionistId])
@@ -491,21 +544,21 @@ model NutritionistClient {
 // ============================================================================
 
 model AiSuggestion {
-  id          String   @id @default(uuid())
-  athleteId   String
-  athlete     AthleteProfile @relation(fields: [athleteId], references: [id], onDelete: Cascade)
-  type        AISuggestionType
-  status      AISuggestionStatus @default(GENERATED)
+  id        String             @id @default(uuid())
+  athleteId String
+  athlete   AthleteProfile     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  type      AISuggestionType
+  status    AISuggestionStatus @default(GENERATED)
 
-  inputSnapshot  Json   // exact inputs sent to the AI engine, for auditability
-  outputJson     Json   // structured AI output (see AI Engine contract doc)
-  modelVersion   String
+  inputSnapshot Json // exact inputs sent to the AI engine, for auditability
+  outputJson    Json // structured AI output (see AI Engine contract doc)
+  modelVersion  String
 
-  reviewedById   String? // trainer/nutritionist who edited or approved
-  reviewedAt     DateTime?
+  reviewedById String? // trainer/nutritionist who edited or approved
+  reviewedAt   DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([athleteId, type])
   @@map("AISuggestion")
@@ -516,25 +569,25 @@ model AiSuggestion {
 // ============================================================================
 
 model TrainingProgram {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  trainerId   String
-  trainer     TrainerProfile @relation("TrainerPrograms", fields: [trainerId], references: [id], onDelete: Cascade)
-  athleteId   String
-  athlete     AthleteProfile @relation("AthleteProgram", fields: [athleteId], references: [id], onDelete: Cascade)
+  id        String         @id @default(uuid())
+  tenantId  String
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trainerId String
+  trainer   TrainerProfile @relation("TrainerPrograms", fields: [trainerId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   AthleteProfile @relation("AthleteProgram", fields: [athleteId], references: [id], onDelete: Cascade)
 
-  title       String
-  goal        FitnessGoal?
-  status      ProgramStatus @default(DRAFT)
+  title                String
+  goal                 FitnessGoal?
+  status               ProgramStatus @default(DRAFT)
   sourceAISuggestionId String? // if generated from AI draft
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate            DateTime?
+  endDate              DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sessions    ProgramSession[]
+  sessions ProgramSession[]
 
   @@index([tenantId])
   @@index([trainerId])
@@ -542,51 +595,51 @@ model TrainingProgram {
 }
 
 model ProgramSession {
-  id          String   @id @default(uuid())
-  programId   String
-  program     TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
-  dayOfWeek   Int      // 0-6
-  title       String
-  exercises   ProgramExercise[]
+  id        String            @id @default(uuid())
+  programId String
+  program   TrainingProgram   @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0-6
+  title     String
+  exercises ProgramExercise[]
 
   @@index([programId])
 }
 
 model ProgramExercise {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   sessionId   String
   session     ProgramSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   name        String
   sets        Int?
-  reps        String?  // e.g. "8-12"
+  reps        String? // e.g. "8-12"
   restSeconds Int?
   notes       String?
-  sortOrder   Int      @default(0)
+  sortOrder   Int            @default(0)
 
   @@index([sessionId])
 }
 
 model DietPlan {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id             String              @id @default(uuid())
+  tenantId       String
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   nutritionistId String
   nutritionist   NutritionistProfile @relation("NutritionistDiets", fields: [nutritionistId], references: [id], onDelete: Cascade)
-  athleteId   String
-  athlete     AthleteProfile @relation("AthleteDiet", fields: [athleteId], references: [id], onDelete: Cascade)
+  athleteId      String
+  athlete        AthleteProfile      @relation("AthleteDiet", fields: [athleteId], references: [id], onDelete: Cascade)
 
-  title       String
-  goal        FitnessGoal?
-  status      ProgramStatus @default(DRAFT)
+  title                String
+  goal                 FitnessGoal?
+  status               ProgramStatus @default(DRAFT)
   sourceAISuggestionId String?
-  dailyCalories Int?
-  startDate   DateTime?
-  endDate     DateTime?
+  dailyCalories        Int?
+  startDate            DateTime?
+  endDate              DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  meals       DietMeal[]
+  meals DietMeal[]
 
   @@index([tenantId])
   @@index([nutritionistId])
@@ -597,7 +650,7 @@ model DietMeal {
   id          String   @id @default(uuid())
   dietPlanId  String
   dietPlan    DietPlan @relation(fields: [dietPlanId], references: [id], onDelete: Cascade)
-  mealTime    String   // e.g. "صبحانه", "میان‌وعده ۱"
+  mealTime    String // e.g. "صبحانه", "میان‌وعده ۱"
   description String   @db.Text
   calories    Int?
   sortOrder   Int      @default(0)
@@ -610,20 +663,20 @@ model DietMeal {
 // ============================================================================
 
 model Membership {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId      String
-  plan        MembershipPlan @relation(fields: [planId], references: [id])
+  id       String         @id @default(uuid())
+  tenantId String
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId   String
+  plan     MembershipPlan @relation(fields: [planId], references: [id])
 
-  status      MembershipStatus @default(PENDING_INSURANCE)
-  startDate   DateTime?
-  endDate     DateTime?
+  status    MembershipStatus @default(PENDING_INSURANCE)
+  startDate DateTime?
+  endDate   DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   payments    Payment[]
   attendances Attendance[]
@@ -633,44 +686,87 @@ model Membership {
 }
 
 model Payment {
-  id           String   @id @default(uuid())
+  id           String      @id @default(uuid())
   tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   membershipId String?
   membership   Membership? @relation(fields: [membershipId], references: [id])
-  orderId      String?  @unique
-  order        Order?   @relation(fields: [orderId], references: [id])
+  orderId      String?     @unique
+  order        Order?      @relation(fields: [orderId], references: [id])
 
-  amount       Decimal  @db.Decimal(12, 2)
-  method       PaymentMethod
-  status       PaymentStatus @default(PENDING)
-  gatewayRef   String?
-  paidAt       DateTime?
-  createdAt    DateTime @default(now())
+  amount     Decimal       @db.Decimal(12, 2)
+  method     PaymentMethod
+  status     PaymentStatus @default(PENDING)
+  gatewayRef String?
+  paidAt     DateTime?
+  createdAt  DateTime      @default(now())
 
   @@index([tenantId, userId])
   @@index([status])
 }
 
 model Attendance {
-  id           String   @id @default(uuid())
+  id           String      @id @default(uuid())
   tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId       String
-  user         User     @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  user         User        @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
   membershipId String?
   membership   Membership? @relation(fields: [membershipId], references: [id])
 
-  method       AttendanceMethod
-  checkInAt    DateTime @default(now())
-  checkOutAt   DateTime?
-  operatorId   String?  // reception staff who manually checked the user in
-  operator     User?    @relation("AttendanceOperator", fields: [operatorId], references: [id])
+  method     AttendanceMethod
+  checkInAt  DateTime          @default(now())
+  checkOutAt DateTime?
+  operatorId String? // reception staff who manually checked the user in
+  operator   User?             @relation("AttendanceOperator", fields: [operatorId], references: [id])
+  deviceId   String?
+  device     AttendanceDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, userId])
   @@index([tenantId, checkInAt])
+}
+
+// Device vendors keep biometric templates on their own hardware. The platform
+// stores only a one-way digest of the vendor/card identifier.
+model AttendanceDevice {
+  id           String                 @id @default(uuid())
+  tenantId     String
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  type         AttendanceDeviceType
+  vendor       String?
+  model        String?
+  serialNumber String?
+  apiKeyDigest String                 @unique
+  apiKeyLast4  String
+  status       AttendanceDeviceStatus @default(PENDING)
+  lastSeenAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  attendances  Attendance[]
+
+  @@index([tenantId, status])
+}
+
+model AttendanceCredential {
+  id              String               @id @default(uuid())
+  tenantId        String
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            AttendanceDeviceType
+  identifierHash  String
+  identifierLast4 String?
+  label           String?
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([tenantId, type, identifierHash])
+  @@index([tenantId, userId])
 }
 
 // Periodic snapshot of active occupancy, written by a scheduled job reading
@@ -682,7 +778,7 @@ model CrowdSnapshot {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   activeCount Int
   capacity    Int
-  level       String   // GREEN | YELLOW | RED, computed from activeCount/capacity
+  level       String // GREEN | YELLOW | RED, computed from activeCount/capacity
   recordedAt  DateTime @default(now())
 
   @@index([tenantId, recordedAt])
@@ -693,69 +789,167 @@ model CrowdSnapshot {
 // ============================================================================
 
 model ProductCategory {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
-  sortOrder Int      @default(0)
+  sortOrder Int    @default(0)
 
-  products  CafeteriaProduct[]
+  products CafeteriaProduct[]
 
   @@index([tenantId])
 }
 
 model CafeteriaProduct {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  categoryId  String
-  category    ProductCategory @relation(fields: [categoryId], references: [id])
+  id         String          @id @default(uuid())
+  tenantId   String
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ProductCategory @relation(fields: [categoryId], references: [id])
 
   title       String
-  description String?  @db.Text
+  description String? @db.Text
   imageUrl    String?
-  price       Decimal  @db.Decimal(12, 2)
-  inventory   Int      @default(0)
-  isActive    Boolean  @default(true)
+  price       Decimal @db.Decimal(12, 2)
+  inventory   Int     @default(0)
+  isActive    Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  orderItems  OrderItem[]
+  orderItems OrderItem[]
 
   @@index([tenantId, categoryId])
 }
 
 model Order {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status      OrderStatus @default(CART)
-  totalAmount Decimal  @db.Decimal(12, 2) @default(0)
+  totalAmount Decimal     @default(0) @db.Decimal(12, 2)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  items       OrderItem[]
-  payment     Payment?
+  items   OrderItem[]
+  payment Payment?
 
   @@index([tenantId, userId])
   @@index([status])
 }
 
 model OrderItem {
-  id          String   @id @default(uuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String
-  product     CafeteriaProduct @relation(fields: [productId], references: [id])
-  quantity    Int
-  unitPrice   Decimal  @db.Decimal(12, 2)
+  id        String           @id @default(uuid())
+  orderId   String
+  order     Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   CafeteriaProduct @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal          @db.Decimal(12, 2)
 
   @@index([orderId])
+}
+
+// ============================================================================
+// MARKETPLACE ADVERTISING & SETTLEMENT ACCOUNTS
+// ============================================================================
+
+model Advertisement {
+  id              String              @id @default(uuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?             @db.Text
+  imageUrl        String?
+  destinationUrl  String?
+  province        String
+  city            String?
+  status          AdvertisementStatus @default(DRAFT)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  dailyBudget     Decimal?            @db.Decimal(12, 2)
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([tenantId, status])
+  @@index([province, city, status])
+}
+
+model FinancialAccount {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope         String // PERSONAL | GYM | BUFFET | TRAINER | ADVISOR
+  label         String
+  bankName      String?
+  accountHolder String
+  iban          String?
+  accountNumber String?
+  cardLast4     String?
+  isDefault     Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, scope])
+  @@index([userId])
+}
+
+// ============================================================================
+// PLATFORM SUBSCRIPTIONS & EXTERNAL INTEGRATIONS
+// ============================================================================
+
+model SubscriptionPlan {
+  id            String               @id @default(uuid())
+  code          String               @unique
+  name          String
+  description   String?              @db.Text
+  monthlyPrice  Decimal              @db.Decimal(12, 2)
+  features      Json
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  subscriptions TenantSubscription[]
+}
+
+model TenantSubscription {
+  id        String             @id @default(uuid())
+  tenantId  String             @unique
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      SubscriptionPlan   @relation(fields: [planId], references: [id])
+  status    SubscriptionStatus @default(TRIAL)
+  startsAt  DateTime           @default(now())
+  renewsAt  DateTime?
+  autoRenew Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([status, renewsAt])
+}
+
+model PlatformIntegration {
+  id              String            @id @default(uuid())
+  key             String            @unique
+  label           String
+  category        String
+  provider        String?
+  status          IntegrationStatus @default(NOT_CONFIGURED)
+  baseUrl         String?
+  requiredEnvVars String[]
+  notes           String?           @db.Text
+  lastCheckedAt   DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 // ============================================================================
@@ -763,76 +957,76 @@ model OrderItem {
 // ============================================================================
 
 model Ticket {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdById  String
-  createdBy    User     @relation("TicketCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy    User    @relation("TicketCreator", fields: [createdById], references: [id], onDelete: Cascade)
   assignedToId String?
-  assignedTo   User?    @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
 
-  targetType   TicketTargetType
-  targetId     String?  // gymId / trainerId / nutritionistId, nullable for PLATFORM
-  subject      String
-  description  String   @db.Text
-  status       TicketStatus @default(OPEN)
-  priority     TicketPriority @default(MEDIUM)
+  targetType  TicketTargetType
+  targetId    String? // gymId / trainerId / nutritionistId, nullable for PLATFORM
+  subject     String
+  description String           @db.Text
+  status      TicketStatus     @default(OPEN)
+  priority    TicketPriority   @default(MEDIUM)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  resolvedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
 
   @@index([tenantId, status])
   @@index([createdById])
 }
 
 model Review {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  authorId     String
-  author       User     @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
-  targetType   TicketTargetType // reused enum: GYM | TRAINER | NUTRITIONIST
-  targetId     String
+  targetType TicketTargetType // reused enum: GYM | TRAINER | NUTRITIONIST
+  targetId   String
 
-  rating       Int      // 1-5
-  comment      String?  @db.Text
+  rating  Int // 1-5
+  comment String? @db.Text
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([tenantId, targetType, targetId])
 }
 
 model Notification {
-  id          String   @id @default(uuid())
-  tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String  @id @default(uuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  channel     NotificationChannel @default(IN_APP)
-  title       String
-  body        String   @db.Text
-  isRead      Boolean  @default(false)
-  metadata    Json?
+  channel  NotificationChannel @default(IN_APP)
+  title    String
+  body     String              @db.Text
+  isRead   Boolean             @default(false)
+  metadata Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, isRead])
 }
 
 model Message {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  senderId    String
-  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  recipientId String
+  id             String   @id @default(uuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId    String
   conversationId String // groups a thread between two users
-  body        String   @db.Text
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  body           String   @db.Text
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
   @@index([tenantId, conversationId])
   @@index([recipientId, isRead])
@@ -843,20 +1037,20 @@ model Message {
 // ============================================================================
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  actorId     String?
-  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  id       String  @id @default(uuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actorId  String?
+  actor    User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
-  action      String   // e.g. "USER_LOGIN", "INSURANCE_APPROVED", "MEMBER_DELETED"
-  entityType  String
-  entityId    String?
-  ipAddress   String?
-  userAgent   String?
-  metadata    Json?
+  action     String // e.g. "USER_LOGIN", "INSURANCE_APPROVED", "MEMBER_DELETED"
+  entityType String
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([tenantId, createdAt])
   @@index([actorId])

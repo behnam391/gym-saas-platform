@@ -20,6 +20,7 @@ export function GymCard({
   name,
   city,
   trustScore,
+  coverImageUrl,
   facilities,
   startingPrice,
   distanceKm,
@@ -29,6 +30,7 @@ export function GymCard({
     <Link href={`/gyms/${slug}`} className="block">
       <MembershipCard className="group flex h-full flex-col overflow-hidden p-0 transition-transform hover:-translate-y-1">
         <div className="relative h-32 overflow-hidden bg-[radial-gradient(circle_at_20%_20%,rgba(228,199,102,0.28),transparent_32%),linear-gradient(135deg,#243b34,#101c18)]">
+          {coverImageUrl && <img src={coverImageUrl} alt={`نمای ${name}`} className="absolute inset-0 size-full object-cover" />}
           <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(90deg,transparent_49%,rgba(255,255,255,.05)_50%,transparent_51%)] [background-size:24px_24px]" />
           <div className="absolute bottom-3 right-4 grid size-12 place-items-center rounded-2xl border border-accent/30 bg-base/80 text-xl font-extrabold text-accent-soft backdrop-blur">
             {name.slice(0, 1)}

@@ -52,7 +52,10 @@ export class DietService {
             })),
           },
         },
-        include: { meals: true },
+        include: {
+          nutritionist: { include: { user: { select: { firstName: true, lastName: true } } } },
+          meals: true,
+        },
       });
     });
   }
@@ -63,7 +66,10 @@ export class DietService {
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
       return tx.dietPlan.findMany({
         where: { athleteId: athlete.id },
-        include: { meals: true },
+        include: {
+          nutritionist: { include: { user: { select: { firstName: true, lastName: true } } } },
+          meals: true,
+        },
         orderBy: { createdAt: 'desc' },
       });
     });

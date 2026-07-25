@@ -1,0 +1,10 @@
+'use client';
+
+import { useState } from 'react';
+import { api } from '../../lib/api';
+import { MembershipCard } from './membership-card';
+import { Badge } from './badge';
+import { Button } from './button';
+
+interface Advertisement { id: string; title: string; description?: string | null; province: string; city?: string | null; status: string; dailyBudget?: number | null; tenant: { name: string; slug: string }; }
+export function AdminAdvertisementsPanel({ initial }: { initial: Advertisement[] }) { const [items, setItems] = useState(initial); async function review(id: string, status: 'APPROVED' | 'REJECTED' | 'PAUSED') { const changed = await api.patch<Advertisement>(`/advertisements/admin/${id}`, { status, rejectionReason: status === 'REJECTED' ? 'نیازمند بازبینی محتوا و اطلاعات کمپین' : undefined }); setItems((current) => current.map((item) => item.id === id ? { ...item, status: changed.status } : item)); } return <div className="grid gap-4 lg:grid-cols-2">{items.map((item) => <MembershipCard key={item.id}><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{item.title}</p><p className="mt-1 text-sm text-muted">{item.tenant.name} · {item.province}{item.city ? `، ${item.city}` : ''}</p></div><Badge tone={item.status === 'APPROVED' ? 'success' : item.status === 'REJECTED' ? 'danger' : 'warning'}>{item.status === 'APPROVED' ? 'تایید شده' : item.status === 'REJECTED' ? 'رد شده' : 'در انتظار'}</Badge></div>{item.description && <p className="mt-4 text-sm leading-6 text-muted">{item.description}</p>}<p className="mt-3 text-sm">بودجه روزانه: <strong>{Number(item.dailyBudget ?? 0).toLocaleString('fa-IR')} تومان</strong></p><div className="mt-4 flex gap-2"><Button size="sm" onClick={() => review(item.id, 'APPROVED')}>تایید انتشار</Button><Button size="sm" variant="danger" onClick={() => review(item.id, 'REJECTED')}>رد درخواست</Button><Button size="sm" variant="ghost" onClick={() => review(item.id, 'PAUSED')}>توقف</Button></div></MembershipCard>)}</div>; }

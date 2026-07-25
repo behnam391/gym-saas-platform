@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Dumbbell, Sparkles, Calendar, MessageSquare, TrendingUp, History, Bell, ListTodo, Ticket, Star } from 'lucide-react';
+import { LayoutDashboard, Users, Dumbbell, Sparkles, Calendar, MessageSquare, TrendingUp, History, Bell, ListTodo, Ticket, Star, UserRound, Wallet } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
@@ -14,6 +14,8 @@ const NAV = [
   { href: '/dashboard/trainer/notifications', label: 'اعلان‌ها', icon: Bell },
   { href: '/dashboard/trainer/tickets', label: 'شکایت‌ها', icon: Ticket },
   { href: '/dashboard/trainer/ratings', label: 'امتیازها', icon: Star },
+  { href: '/dashboard/trainer/banking', label: 'حساب‌های مالی', icon: Wallet },
+  { href: '/dashboard/trainer/profile', label: 'پروفایل من', icon: UserRound },
 ];
 
 export default function TrainerLayout({ children }: { children: React.ReactNode }) {

@@ -26,3 +26,9 @@ export class ReviewNutritionistDto {
   @IsString()
   rejectionReason?: string;
 }
+
+export class AssignClientDto {
+  @IsString()
+  @IsNotEmpty()
+  athleteUserId: string;
+}

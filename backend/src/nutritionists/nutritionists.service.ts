@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApplyNutritionistDto, ReviewNutritionistDto } from './dto/nutritionist.dto';
+import { ApplyNutritionistDto, AssignClientDto, ReviewNutritionistDto } from './dto/nutritionist.dto';
 
 @Injectable()
 export class NutritionistsService {
@@ -14,6 +14,43 @@ export class NutritionistsService {
         create: { userId, ...dto },
       }),
     );
+  }
+
+  getMine(userId: string) {
+    return this.prisma.forTenant((tx) =>
+      tx.nutritionistProfile.findUnique({ where: { userId } }),
+    );
+  }
+
+  listClients(userId: string) {
+    return this.prisma.forTenant(async (tx) => {
+      const nutritionist = await tx.nutritionistProfile.findUnique({ where: { userId } });
+      if (!nutritionist) throw new NotFoundException('پروفایل متخصص تغذیه یافت نشد.');
+      return tx.nutritionistClient.findMany({
+        where: { nutritionistId: nutritionist.id, isActive: true },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, mobile: true } },
+          athlete: { include: { measurements: { orderBy: { recordedAt: 'desc' }, take: 1 }, goals: { where: { achieved: false } } } },
+        },
+        orderBy: { startedAt: 'desc' },
+      });
+    });
+  }
+
+  assignClient(userId: string, dto: AssignClientDto) {
+    return this.prisma.forTenant(async (tx) => {
+      const nutritionist = await tx.nutritionistProfile.findUnique({ where: { userId } });
+      if (!nutritionist || nutritionist.status !== 'APPROVED') {
+        throw new BadRequestException('حساب متخصص تغذیه هنوز تایید نشده است.');
+      }
+      const athlete = await tx.athleteProfile.findUnique({ where: { userId: dto.athleteUserId } });
+      if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
+      return tx.nutritionistClient.upsert({
+        where: { nutritionistId_athleteId: { nutritionistId: nutritionist.id, athleteId: athlete.id } },
+        create: { nutritionistId: nutritionist.id, athleteId: athlete.id, userId: dto.athleteUserId },
+        update: { isActive: true, endedAt: null, userId: dto.athleteUserId },
+      });
+    });
   }
 
   /**

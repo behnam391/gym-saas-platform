@@ -73,9 +73,13 @@ export class NotificationsService {
     );
   }
 
-  markRead(notificationId: string) {
-    return this.prisma.forTenant((tx) =>
-      tx.notification.update({ where: { id: notificationId }, data: { isRead: true } }),
-    );
+  markRead(userId: string, notificationId: string) {
+    return this.prisma.forTenant(async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { id: notificationId, userId },
+        data: { isRead: true },
+      });
+      return { updated: result.count };
+    });
   }
 }

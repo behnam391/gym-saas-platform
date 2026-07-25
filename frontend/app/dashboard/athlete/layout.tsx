@@ -12,6 +12,7 @@ const NAV = [
   { href: '/dashboard/athlete/crowd', label: 'وضعیت شلوغی', icon: Users },
   { href: '/dashboard/athlete/orders', label: 'سفارش‌ها', icon: ShoppingBag },
   { href: '/dashboard/athlete/payments', label: 'پرداخت‌ها', icon: Wallet },
+  { href: '/dashboard/athlete/banking', label: 'حساب مالی', icon: Wallet },
   { href: '/dashboard/athlete/goals', label: 'هدف‌ها', icon: Target },
   { href: '/dashboard/athlete/notifications', label: 'اعلان‌ها', icon: Bell },
   { href: '/dashboard/athlete/messages', label: 'پیام‌ها', icon: MessageSquare },

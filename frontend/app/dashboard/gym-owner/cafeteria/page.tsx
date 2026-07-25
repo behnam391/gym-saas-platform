@@ -11,24 +11,28 @@ interface Product {
   category: { name: string };
 }
 
-async function getProducts(): Promise<Product[]> {
+async function getData(): Promise<{ products: Product[]; categories: { id: string; name: string }[] }> {
   const token = (await cookies()).get('accessToken')?.value;
   try {
-    return await api.get<Product[]>('/cafeteria/products', { accessToken: token });
+    const [products, categories] = await Promise.all([
+      api.get<Product[]>('/cafeteria/products', { accessToken: token }),
+      api.get<{ id: string; name: string }[]>('/cafeteria/categories', { accessToken: token }),
+    ]);
+    return { products, categories };
   } catch {
-    return [];
+    return { products: [], categories: [] };
   }
 }
 
 export default async function CafeteriaPage() {
-  const products = await getProducts();
+  const { products, categories } = await getData();
   return (
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-extrabold">مدیریت بوفه</h1>
         <p className="text-muted">محصولات، موجودی و قیمت‌گذاری بوفه باشگاه</p>
       </header>
-      <CafeteriaProductsPanel initial={products} />
+      <CafeteriaProductsPanel initial={products} categories={categories} />
     </div>
   );
 }

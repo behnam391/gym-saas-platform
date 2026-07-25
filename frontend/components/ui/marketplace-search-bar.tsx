@@ -3,12 +3,13 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { Input } from './input';
 import { Button } from './button';
+import { IRAN_LOCATIONS, IRAN_PROVINCES } from '../../lib/iran-locations';
 
 export function MarketplaceSearchBar() {
   const router = useRouter();
   const params = useSearchParams();
+  const [province, setProvince] = useState(params.get('province') ?? '');
   const [city, setCity] = useState(params.get('city') ?? '');
   const [maxPrice, setMaxPrice] = useState(params.get('maxPrice') ?? '');
   const [minRating, setMinRating] = useState(params.get('minRating') ?? '');
@@ -18,6 +19,8 @@ export function MarketplaceSearchBar() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const next = new URLSearchParams(params.toString());
+    if (province) next.set('province', province);
+    else next.delete('province');
     if (city) next.set('city', city);
     else next.delete('city');
     if (maxPrice) next.set('maxPrice', maxPrice);
@@ -34,9 +37,10 @@ export function MarketplaceSearchBar() {
   return (
     <form
       onSubmit={handleSearch}
-      className="membership-card grid w-full max-w-5xl gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto]"
+      className="membership-card grid w-full max-w-6xl gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_auto]"
     >
-      <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="شهر؛ مثلاً تهران" aria-label="جستجوی شهر" />
+      <select value={province} onChange={(e) => { setProvince(e.target.value); setCity(''); }} aria-label="استان" className="h-11 rounded-xl border border-border/10 bg-surface px-3 text-sm text-ink"><option value="">همه استان‌ها</option>{IRAN_PROVINCES.map((name) => <option key={name} value={name}>{name}</option>)}</select>
+      <select value={city} onChange={(e) => setCity(e.target.value)} aria-label="شهرستان" disabled={!province} className="h-11 rounded-xl border border-border/10 bg-surface px-3 text-sm text-ink disabled:opacity-50"><option value="">همه شهرستان‌ها</option>{(IRAN_LOCATIONS[province] ?? []).map((name) => <option key={name} value={name}>{name}</option>)}</select>
       <select
         value={maxPrice}
         onChange={(e) => setMaxPrice(e.target.value)}

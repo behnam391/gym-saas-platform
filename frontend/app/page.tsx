@@ -3,12 +3,16 @@ import { MarketplaceSearchBar } from '../components/ui/marketplace-search-bar';
 import { GymCard } from '../components/ui/gym-card';
 import { SiteHeader } from '../components/ui/site-header';
 import { BadgeCheck, Building2, ShieldCheck, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Megaphone, MapPin } from 'lucide-react';
 
 interface TenantSummary {
   id: string;
   slug: string;
   name: string;
   city: string;
+  province?: string | null;
+  coverImageUrl?: string | null;
   trustScore: number;
   facilities: { name: string }[];
   membershipPlans: { price: number }[];
@@ -17,11 +21,22 @@ interface TenantSummary {
 }
 
 interface MarketplaceParams {
+  province?: string;
   city?: string;
   maxPrice?: string;
   minRating?: string;
   gender?: string;
   facilities?: string;
+}
+
+interface Advertisement {
+  id: string;
+  title: string;
+  description?: string | null;
+  destinationUrl?: string | null;
+  province: string;
+  city?: string | null;
+  tenant: { slug: string; name: string };
 }
 
 async function getGyms(params: MarketplaceParams): Promise<TenantSummary[]> {
@@ -37,13 +52,20 @@ async function getGyms(params: MarketplaceParams): Promise<TenantSummary[]> {
   }
 }
 
+async function getAdvertisements(params: MarketplaceParams): Promise<Advertisement[]> {
+  const query = new URLSearchParams();
+  if (params.province) query.set('province', params.province);
+  if (params.city) query.set('city', params.city);
+  try { return await api.get<Advertisement[]>(`/advertisements/public${query.size ? `?${query}` : ''}`); } catch { return []; }
+}
+
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<MarketplaceParams>;
 }) {
   const params = await searchParams;
-  const gyms = await getGyms(params);
+  const [gyms, advertisements] = await Promise.all([getGyms(params), getAdvertisements(params)]);
 
   return (
     <>
@@ -84,11 +106,18 @@ export default async function HomePage({
         </div>
       </section>
 
+      {advertisements.length > 0 && (
+        <section className="mb-12">
+          <div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2 text-lg font-extrabold"><Megaphone className="size-5 text-accent-soft" />پیشنهادهای ویژه {params.province ? `در ${params.province}` : ''}</h2><span className="text-xs text-muted">تبلیغات تاییدشده</span></div>
+          <div className="grid gap-4 md:grid-cols-2">{advertisements.map((ad) => <Link key={ad.id} href={ad.destinationUrl || `/gyms/${ad.tenant.slug}`} className="group overflow-hidden rounded-2xl border border-accent/20 bg-[linear-gradient(135deg,rgba(201,162,39,.14),rgba(76,175,109,.07))] p-5 transition hover:-translate-y-0.5"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold text-accent-soft">{ad.tenant.name}</p><h3 className="mt-2 text-lg font-extrabold">{ad.title}</h3>{ad.description && <p className="mt-2 text-sm leading-6 text-muted">{ad.description}</p>}</div><Megaphone className="size-6 shrink-0 text-accent-soft" /></div><p className="mt-4 flex items-center gap-1 text-xs text-muted"><MapPin className="size-3.5" />{ad.province}{ad.city ? `، ${ad.city}` : '، سراسر استان'}</p></Link>)}</div>
+        </section>
+      )}
+
       {/* ===== Results ===== */}
       <section>
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {params.city ? `باشگاه‌های ${params.city}` : 'باشگاه‌های پیشنهادی'}
+            {params.city ? `باشگاه‌های ${params.city}` : params.province ? `باشگاه‌های استان ${params.province}` : 'باشگاه‌های پیشنهادی'}
           </h2>
           <span className="text-sm text-muted">{gyms.length} باشگاه</span>
         </div>
@@ -106,6 +135,7 @@ export default async function HomePage({
                 slug={g.slug}
                 name={g.name}
                 city={g.city}
+                coverImageUrl={g.coverImageUrl}
                 trustScore={g.trustScore}
                 facilities={g.facilities}
                 startingPrice={

@@ -4,7 +4,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CafeteriaService } from './cafeteria.service';
-import { CreateProductDto, UpdateProductDto, PlaceOrderDto } from './dto/cafeteria.dto';
+import { CreateProductDto, UpdateProductDto, PlaceOrderDto, UpdateOrderStatusDto } from './dto/cafeteria.dto';
 
 @Controller('cafeteria')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,5 +55,23 @@ export class CafeteriaController {
   @Roles('ATHLETE')
   myOrders(@CurrentUser() user: AuthenticatedUser) {
     return this.cafeteriaService.listMyOrders(user.userId);
+  }
+
+  @Get('orders')
+  @Roles('GYM_OWNER', 'BUFFET_STAFF')
+  listOrders() {
+    return this.cafeteriaService.listOrders();
+  }
+
+  @Patch('orders/:orderId/status')
+  @Roles('GYM_OWNER', 'BUFFET_STAFF')
+  updateOrderStatus(@Param('orderId') orderId: string, @Body() dto: UpdateOrderStatusDto) {
+    return this.cafeteriaService.updateOrderStatus(orderId, dto.status);
+  }
+
+  @Get('summary')
+  @Roles('GYM_OWNER', 'BUFFET_STAFF')
+  summary() {
+    return this.cafeteriaService.summary();
   }
 }

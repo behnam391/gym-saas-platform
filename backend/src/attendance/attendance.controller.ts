@@ -29,4 +29,10 @@ export class AttendanceController {
   getCrowdStatus() {
     return this.attendanceService.getCrowdStatus();
   }
+
+  @Get('recent')
+  @Roles('RECEPTION', 'GYM_OWNER')
+  listRecent() {
+    return this.attendanceService.listRecent();
+  }
 }

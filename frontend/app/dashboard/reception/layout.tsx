@@ -1,4 +1,4 @@
-import { LayoutDashboard, QrCode, Users, Coffee, Ticket } from 'lucide-react';
+import { LayoutDashboard, QrCode, Users, Coffee, Ticket, UserRound, Wallet } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
@@ -7,6 +7,8 @@ const NAV = [
   { href: '/dashboard/reception/members', label: 'اعضا', icon: Users },
   { href: '/dashboard/reception/cafeteria', label: 'بوفه', icon: Coffee },
   { href: '/dashboard/reception/tickets', label: 'تیکت‌ها', icon: Ticket },
+  { href: '/dashboard/reception/banking', label: 'حساب مالی', icon: Wallet },
+  { href: '/dashboard/reception/profile', label: 'پروفایل من', icon: UserRound },
 ];
 
 export default function ReceptionLayout({ children }: { children: React.ReactNode }) {

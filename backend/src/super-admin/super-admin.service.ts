@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { VerifyTenantDto, SetTenantActiveDto } from './dto/super-admin.dto';
+import { VerifyTenantDto, SetTenantActiveDto, UpdateIntegrationDto, AssignSubscriptionDto } from './dto/super-admin.dto';
 
 @Injectable()
 export class SuperAdminService {
@@ -76,6 +76,47 @@ export class SuperAdminService {
     return db.ticket.findMany({
       where: { targetType: 'PLATFORM' },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  listIntegrations() {
+    return this.prisma.forPlatform().platformIntegration.findMany({ orderBy: [{ category: 'asc' }, { label: 'asc' }] });
+  }
+
+  async updateIntegration(key: string, dto: UpdateIntegrationDto) {
+    const db = this.prisma.forPlatform();
+    const integration = await db.platformIntegration.findUnique({ where: { key } });
+    if (!integration) throw new NotFoundException('اتصال سامانه یافت نشد.');
+    return db.platformIntegration.update({
+      where: { key },
+      data: { ...dto, lastCheckedAt: dto.status === 'HEALTHY' ? new Date() : integration.lastCheckedAt },
+    });
+  }
+
+  async listSubscriptions() {
+    const db = this.prisma.forPlatform();
+    const [plans, subscriptions] = await Promise.all([
+      db.subscriptionPlan.findMany({ where: { isActive: true }, orderBy: { monthlyPrice: 'asc' } }),
+      db.tenantSubscription.findMany({ include: { plan: true, tenant: { select: { id: true, name: true, city: true } } }, orderBy: { updatedAt: 'desc' } }),
+    ]);
+    return { plans, subscriptions };
+  }
+
+  async assignSubscription(tenantId: string, dto: AssignSubscriptionDto) {
+    const db = this.prisma.forPlatform();
+    const [tenant, plan] = await Promise.all([
+      db.tenant.findUnique({ where: { id: tenantId } }),
+      db.subscriptionPlan.findUnique({ where: { code: dto.planCode } }),
+    ]);
+    if (!tenant) throw new NotFoundException('باشگاه یافت نشد.');
+    if (!plan) throw new NotFoundException('پلن اشتراک یافت نشد.');
+    const renewsAt = new Date();
+    renewsAt.setMonth(renewsAt.getMonth() + 1);
+    return db.tenantSubscription.upsert({
+      where: { tenantId },
+      create: { tenantId, planId: plan.id, status: dto.status, renewsAt },
+      update: { planId: plan.id, status: dto.status, renewsAt },
+      include: { plan: true, tenant: { select: { id: true, name: true } } },
     });
   }
 }

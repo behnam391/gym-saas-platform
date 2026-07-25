@@ -14,10 +14,11 @@
     "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch",
     "test:cov": "jest --config jest.config.js --coverage",
-    "test:e2e": "jest --config test/jest-e2e.config.js"
-    ,"local:postgres": "node scripts/local-postgres.mjs"
-    ,"local:seed": "node prisma/seed-local.mjs"
-    ,"local:rls": "node scripts/apply-local-rls.mjs"
+    "test:e2e": "jest --config test/jest-e2e.config.js",
+    "local:postgres": "node scripts/local-postgres.mjs",
+    "local:redis": "node scripts/local-redis.mjs",
+    "local:seed": "node prisma/seed-local.mjs",
+    "local:rls": "node scripts/apply-local-rls.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.650.0",
@@ -40,6 +41,7 @@
     "class-validator": "^0.14.1",
     "helmet": "^7.1.0",
     "ioredis": "^5.4.1",
+    "multer": "^1.4.5-lts.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -51,6 +53,7 @@
     "@nestjs/testing": "^11.1.28",
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^29.5.12",
+    "@types/multer": "^1.4.12",
     "@types/node": "^20.14.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
@@ -58,11 +61,13 @@
     "embedded-postgres": "^18.4.0-beta.17",
     "jest": "^29.7.0",
     "prisma": "^5.18.0",
+    "redis-memory-server": "^0.17.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.5.0"
   },
   "allowScripts": {
-    "@embedded-postgres/windows-x64@18.4.0-beta.17": true
+    "@embedded-postgres/windows-x64@18.4.0-beta.17": true,
+    "redis-memory-server@0.17.0": true
   }
 }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Utensils, Sparkles, ClipboardList, MessageSquare, TrendingUp, Calendar, Bell, Ticket, Star } from 'lucide-react';
+import { LayoutDashboard, Users, Utensils, Sparkles, ClipboardList, MessageSquare, TrendingUp, Calendar, Bell, Ticket, Star, UserRound, Wallet } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
@@ -13,6 +13,8 @@ const NAV = [
   { href: '/dashboard/nutritionist/notifications', label: 'اعلان‌ها', icon: Bell },
   { href: '/dashboard/nutritionist/tickets', label: 'شکایت‌ها', icon: Ticket },
   { href: '/dashboard/nutritionist/ratings', label: 'امتیازها', icon: Star },
+  { href: '/dashboard/nutritionist/banking', label: 'حساب‌های مالی', icon: Wallet },
+  { href: '/dashboard/nutritionist/profile', label: 'پروفایل من', icon: UserRound },
 ];
 
 export default function NutritionistLayout({ children }: { children: React.ReactNode }) {

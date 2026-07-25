@@ -21,6 +21,7 @@ export function SiteHeader() {
           <ThemeToggle />
           <Link
             href="/auth/login"
+            aria-label="ورود"
             className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'gap-2' })}
           >
             <LogIn className="size-4" />

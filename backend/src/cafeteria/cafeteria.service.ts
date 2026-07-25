@@ -114,4 +114,34 @@ export class CafeteriaService {
       }),
     );
   }
+
+
+  listOrders() {
+    return this.prisma.forTenant((tx) => tx.order.findMany({
+      where: { status: { not: 'CART' } },
+      include: {
+        user: { select: { firstName: true, lastName: true, mobile: true } },
+        items: { include: { product: { select: { title: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }));
+  }
+
+  updateOrderStatus(orderId: string, status: 'PLACED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED') {
+    return this.prisma.forTenant((tx) => tx.order.update({ where: { id: orderId }, data: { status } }));
+  }
+
+  async summary() {
+    return this.prisma.forTenant(async (tx) => {
+      const [openOrders, readyOrders, lowStock, revenue, products] = await Promise.all([
+        tx.order.count({ where: { status: { in: ['PLACED', 'PREPARING'] } } }),
+        tx.order.count({ where: { status: 'READY' } }),
+        tx.cafeteriaProduct.count({ where: { isActive: true, inventory: { lte: 5 } } }),
+        tx.order.aggregate({ where: { status: 'DELIVERED' }, _sum: { totalAmount: true } }),
+        tx.cafeteriaProduct.count({ where: { isActive: true } }),
+      ]);
+      return { openOrders, readyOrders, lowStock, products, deliveredRevenue: Number(revenue._sum.totalAmount ?? 0) };
+    });
+  }
 }

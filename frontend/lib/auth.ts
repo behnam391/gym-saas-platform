@@ -4,7 +4,7 @@ export const ROLE_DASHBOARDS: Record<string, string> = {
   TRAINER: '/dashboard/trainer',
   NUTRITIONIST: '/dashboard/nutritionist',
   RECEPTION: '/dashboard/reception',
-  BUFFET_STAFF: '/dashboard/gym-owner/cafeteria',
+  BUFFET_STAFF: '/dashboard/buffet',
   ATHLETE: '/dashboard/athlete',
 };
 

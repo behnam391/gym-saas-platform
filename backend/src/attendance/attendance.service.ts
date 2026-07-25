@@ -23,6 +23,27 @@ export class AttendanceService {
    */
   checkIn(operatorId: string, dto: CheckInDto) {
     return this.prisma.forTenant(async (tx) => {
+      const member = await tx.user.findUnique({
+        where: { id: dto.userId },
+        select: { id: true, isActive: true, isRestricted: true },
+      });
+      if (!member?.isActive || member.isRestricted) {
+        throw new BadRequestException('حساب این عضو فعال نیست یا هنوز محدودیت مدارک دارد.');
+      }
+
+      const membership = await tx.membership.findFirst({
+        where: {
+          ...(dto.membershipId ? { id: dto.membershipId } : {}),
+          userId: dto.userId,
+          status: 'ACTIVE',
+          OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!membership) {
+        throw new BadRequestException('عضویت فعال و معتبر برای این کاربر یافت نشد.');
+      }
+
       const openSession = await tx.attendance.findFirst({
         where: { userId: dto.userId, checkOutAt: null },
       });
@@ -36,7 +57,7 @@ export class AttendanceService {
         data: {
           tenantId: this.tenantContext.requireTenantId(),
           userId: dto.userId,
-          membershipId: dto.membershipId,
+          membershipId: membership.id,
           method: dto.method as any,
           operatorId,
         },
@@ -73,5 +94,18 @@ export class AttendanceService {
 
       return { activeCount, capacity, level };
     });
+  }
+
+  listRecent() {
+    return this.prisma.forTenant((tx) =>
+      tx.attendance.findMany({
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, mobile: true } },
+          membership: { include: { plan: true } },
+        },
+        orderBy: { checkInAt: 'desc' },
+        take: 200,
+      }),
+    );
   }
 }

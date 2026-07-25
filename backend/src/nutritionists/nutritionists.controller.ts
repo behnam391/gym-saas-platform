@@ -4,7 +4,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { NutritionistsService } from './nutritionists.service';
-import { ApplyNutritionistDto, ReviewNutritionistDto } from './dto/nutritionist.dto';
+import { ApplyNutritionistDto, AssignClientDto, ReviewNutritionistDto } from './dto/nutritionist.dto';
 
 @Controller('nutritionists')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -15,6 +15,24 @@ export class NutritionistsController {
   @Roles('NUTRITIONIST')
   apply(@CurrentUser() user: AuthenticatedUser, @Body() dto: ApplyNutritionistDto) {
     return this.nutritionistsService.apply(user.userId, dto);
+  }
+
+  @Get('me')
+  @Roles('NUTRITIONIST')
+  getMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.nutritionistsService.getMine(user.userId);
+  }
+
+  @Get('clients')
+  @Roles('NUTRITIONIST')
+  listClients(@CurrentUser() user: AuthenticatedUser) {
+    return this.nutritionistsService.listClients(user.userId);
+  }
+
+  @Post('clients')
+  @Roles('NUTRITIONIST')
+  assignClient(@CurrentUser() user: AuthenticatedUser, @Body() dto: AssignClientDto) {
+    return this.nutritionistsService.assignClient(user.userId, dto);
   }
 
   @Get('pending')

@@ -16,11 +16,12 @@ interface Product {
   category: { name: string };
 }
 
-export function CafeteriaProductsPanel({ initial }: { initial: Product[] }) {
+export function CafeteriaProductsPanel({ initial, categories }: { initial: Product[]; categories: { id: string; name: string }[] }) {
   const [products, setProducts] = useState(initial);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [inventory, setInventory] = useState('');
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,11 +30,9 @@ export function CafeteriaProductsPanel({ initial }: { initial: Product[] }) {
     setError(null);
     setLoading(true);
     try {
-      // Requires an existing categoryId in a real flow — simplified here to
-      // demonstrate the create-product call; category picker omitted.
       const created = await api.post<Product>(
         '/cafeteria/products',
-        { title, price: Number(price), inventory: Number(inventory), categoryId: 'default' },
+        { title, price: Number(price), inventory: Number(inventory), categoryId },
       );
       setProducts((p) => [created, ...p]);
       setTitle('');
@@ -54,8 +53,9 @@ export function CafeteriaProductsPanel({ initial }: { initial: Product[] }) {
           <Input label="عنوان" value={title} onChange={(e) => setTitle(e.target.value)} required />
           <Input label="قیمت (تومان)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} required />
           <Input label="موجودی" type="number" value={inventory} onChange={(e) => setInventory(e.target.value)} required />
+          <label className="flex flex-col gap-1.5 text-sm text-muted">دسته‌بندی<select className="h-11 rounded-xl border border-border/10 bg-surface px-3 text-ink" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} required>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <Button type="submit" disabled={loading}>{loading ? 'در حال افزودن…' : 'افزودن محصول'}</Button>
+          <Button type="submit" disabled={loading || !categoryId}>{loading ? 'در حال افزودن…' : 'افزودن محصول'}</Button>
         </form>
       </MembershipCard>
 

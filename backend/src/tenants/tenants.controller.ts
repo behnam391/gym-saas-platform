@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -8,8 +8,10 @@ import {
   SearchTenantsDto,
   UpdateTenantProfileDto,
   CreateMembershipPlanDto,
+  UpdateMembershipPlanDto,
   ReviewInsuranceDto,
   ReviewParentalConsentDto,
+  AddTenantGalleryImageDto,
 } from './dto/tenant.dto';
 
 @Controller('tenants')
@@ -21,6 +23,34 @@ export class TenantsController {
   @Get()
   search(@Query() dto: SearchTenantsDto) {
     return this.tenantsService.search(dto);
+  }
+
+  @Get('me/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER', 'RECEPTION')
+  getMyProfile() {
+    return this.tenantsService.getMyProfile();
+  }
+
+  @Post('me/gallery')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER')
+  addGalleryImage(@Body() dto: AddTenantGalleryImageDto) {
+    return this.tenantsService.addGalleryImage(dto);
+  }
+
+  @Delete('me/gallery/:imageId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER')
+  removeGalleryImage(@Param('imageId') imageId: string) {
+    return this.tenantsService.removeGalleryImage(imageId);
+  }
+
+  @Get('me/membership-plans')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER', 'RECEPTION')
+  listMembershipPlans() {
+    return this.tenantsService.listMembershipPlans();
   }
 
   @Get(':slug')
@@ -42,6 +72,20 @@ export class TenantsController {
   @Roles('GYM_OWNER')
   createMembershipPlan(@Body() dto: CreateMembershipPlanDto) {
     return this.tenantsService.createMembershipPlan(dto);
+  }
+
+  @Patch('me/membership-plans/:planId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER')
+  updateMembershipPlan(@Param('planId') planId: string, @Body() dto: UpdateMembershipPlanDto) {
+    return this.tenantsService.updateMembershipPlan(planId, dto);
+  }
+
+  @Delete('me/membership-plans/:planId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER')
+  archiveMembershipPlan(@Param('planId') planId: string) {
+    return this.tenantsService.archiveMembershipPlan(planId);
   }
 
   @Get('me/members')

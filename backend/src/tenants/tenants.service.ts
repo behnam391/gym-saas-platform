@@ -5,8 +5,10 @@ import {
   SearchTenantsDto,
   UpdateTenantProfileDto,
   CreateMembershipPlanDto,
+  UpdateMembershipPlanDto,
   ReviewInsuranceDto,
   ReviewParentalConsentDto,
+  AddTenantGalleryImageDto,
 } from './dto/tenant.dto';
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -41,6 +43,8 @@ export class TenantsService {
       where: {
         isActive: true,
         isVerified: true,
+        ...(dto.province ? { province: { equals: dto.province, mode: 'insensitive' as const } } : {}),
+        ...(dto.county ? { county: { equals: dto.county, mode: 'insensitive' as const } } : {}),
         ...(dto.city ? { city: { contains: dto.city, mode: 'insensitive' as const } } : {}),
         ...(dto.gender ? { OR: [{ genderPolicy: dto.gender }, { genderPolicy: null }] } : {}),
         ...(dto.minRating ? { trustScore: { gte: dto.minRating } } : {}),
@@ -151,11 +155,63 @@ export class TenantsService {
     );
   }
 
+  getMyProfile() {
+    const tenantId = this.tenantContext.requireTenantId();
+    return this.prisma.forTenant((tx) =>
+      tx.tenant.findUnique({
+        where: { id: tenantId },
+        include: {
+          facilities: true,
+          galleryImages: { orderBy: { sortOrder: 'asc' } },
+          membershipPlans: { orderBy: { createdAt: 'desc' } },
+          _count: { select: { users: true, memberships: true } },
+        },
+      }),
+    );
+  }
+
+  addGalleryImage(dto: AddTenantGalleryImageDto) {
+    return this.prisma.forTenant(async (tx) => {
+      const tenantId = this.tenantContext.requireTenantId();
+      const count = await tx.tenantGalleryImage.count();
+      return tx.tenantGalleryImage.create({
+        data: { tenantId, url: dto.url, type: dto.type ?? 'image', sortOrder: count },
+      });
+    });
+  }
+
+  removeGalleryImage(imageId: string) {
+    return this.prisma.forTenant(async (tx) => {
+      const image = await tx.tenantGalleryImage.findUnique({ where: { id: imageId } });
+      if (!image) throw new NotFoundException('تصویر باشگاه یافت نشد.');
+      await tx.tenantGalleryImage.delete({ where: { id: imageId } });
+      return { message: 'تصویر از گالری حذف شد.' };
+    });
+  }
+
+  listMembershipPlans() {
+    return this.prisma.forTenant((tx) =>
+      tx.membershipPlan.findMany({ orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }] }),
+    );
+  }
+
   createMembershipPlan(dto: CreateMembershipPlanDto) {
     return this.prisma.forTenant((tx) =>
       tx.membershipPlan.create({
         data: { ...dto, tenantId: this.tenantContext.requireTenantId() },
       }),
+    );
+  }
+
+  updateMembershipPlan(planId: string, dto: UpdateMembershipPlanDto) {
+    return this.prisma.forTenant((tx) =>
+      tx.membershipPlan.update({ where: { id: planId }, data: dto }),
+    );
+  }
+
+  archiveMembershipPlan(planId: string) {
+    return this.prisma.forTenant((tx) =>
+      tx.membershipPlan.update({ where: { id: planId }, data: { isActive: false } }),
     );
   }
 

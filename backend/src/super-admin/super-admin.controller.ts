@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { SuperAdminService } from './super-admin.service';
-import { VerifyTenantDto, SetTenantActiveDto } from './dto/super-admin.dto';
+import { VerifyTenantDto, SetTenantActiveDto, UpdateIntegrationDto, AssignSubscriptionDto } from './dto/super-admin.dto';
 
 @Controller('super-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,5 +44,25 @@ export class SuperAdminController {
   @Get('tickets')
   listAllTickets() {
     return this.superAdminService.listAllTickets();
+  }
+
+  @Get('integrations')
+  listIntegrations() {
+    return this.superAdminService.listIntegrations();
+  }
+
+  @Patch('integrations/:key')
+  updateIntegration(@Param('key') key: string, @Body() dto: UpdateIntegrationDto) {
+    return this.superAdminService.updateIntegration(key, dto);
+  }
+
+  @Get('subscriptions')
+  subscriptions() {
+    return this.superAdminService.listSubscriptions();
+  }
+
+  @Patch('subscriptions/:tenantId')
+  assignSubscription(@Param('tenantId') tenantId: string, @Body() dto: AssignSubscriptionDto) {
+    return this.superAdminService.assignSubscription(tenantId, dto);
   }
 }

@@ -60,7 +60,10 @@ export class ProgramsService {
             })),
           },
         },
-        include: { sessions: { include: { exercises: true } } },
+        include: {
+          trainer: { include: { user: { select: { firstName: true, lastName: true } } } },
+          sessions: { include: { exercises: true } },
+        },
       });
     });
   }
@@ -71,7 +74,10 @@ export class ProgramsService {
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
       return tx.trainingProgram.findMany({
         where: { athleteId: athlete.id },
-        include: { sessions: { include: { exercises: true } } },
+        include: {
+          trainer: { include: { user: { select: { firstName: true, lastName: true } } } },
+          sessions: { include: { exercises: true } },
+        },
         orderBy: { createdAt: 'desc' },
       });
     });

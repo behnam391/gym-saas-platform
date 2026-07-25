@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
+import { unlinkSync } from 'fs';
 import { TenantContext } from '../common/tenant-context';
 import { RequestUploadUrlDto } from './dto/upload.dto';
 
@@ -83,5 +84,27 @@ export class UploadsService {
   publicUrlFor(key: string): string {
     const base = process.env.S3_PUBLIC_BASE_URL ?? process.env.S3_ENDPOINT;
     return `${base}/${process.env.S3_BUCKET}/${key}`;
+  }
+
+  completeLocalUpload(userId: string, purpose: string, file?: Express.Multer.File) {
+    if (process.env.NODE_ENV === 'production' && process.env.LOCAL_UPLOADS_ENABLED !== 'true') {
+      throw new BadRequestException('آپلود مستقیم محلی در محیط عملیاتی غیرفعال است.');
+    }
+    if (!file) throw new BadRequestException('فایلی انتخاب نشده است.');
+
+    const allowed = ALLOWED_CONTENT_TYPES[purpose];
+    if (!allowed || !allowed.includes(file.mimetype)) {
+      try { unlinkSync(file.path); } catch { /* already removed or unavailable */ }
+      throw new BadRequestException('نوع این فایل برای کاربرد انتخاب‌شده مجاز نیست.');
+    }
+    const port = process.env.PORT ?? 3000;
+    const base = process.env.PUBLIC_API_ORIGIN ?? `http://localhost:${port}`;
+    return {
+      url: `${base}/local-uploads/${file.filename}`,
+      purpose,
+      ownerId: userId,
+      size: file.size,
+      contentType: file.mimetype,
+    };
   }
 }

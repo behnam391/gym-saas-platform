@@ -1,0 +1,4 @@
+import { cookies } from 'next/headers';
+import { api } from '../../../../lib/api';
+import { PlatformIntegrationsPanel } from '../../../../components/ui/platform-integrations-panel';
+export default async function IntegrationsPage() { const token = (await cookies()).get('accessToken')?.value; const items = await api.get<any[]>('/super-admin/integrations', { accessToken: token }); return <div className="flex flex-col gap-6"><header><h1 className="text-2xl font-extrabold">مرکز یکپارچه‌سازی سامانه</h1><p className="text-muted">پیامک، بیمه ورزشی، مالیات، نقشه‌ها و درگاه‌های پرداخت</p></header><div className="rounded-2xl border border-warning/20 bg-warning/10 p-4 text-sm leading-6"><strong>مدیریت امن:</strong> کلیدهای واقعی در متغیرهای محیطی سرور نگهداری می‌شوند و این صفحه فقط وضعیت اتصال را نمایش می‌دهد.</div><PlatformIntegrationsPanel initial={items} /></div>; }

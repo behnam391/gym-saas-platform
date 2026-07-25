@@ -1,24 +1,15 @@
 import { cookies } from 'next/headers';
 import { api } from '../../../../lib/api';
-import { MembersTable } from '../../../../components/ui/members-table';
+import { ManagedMember, MembersTable } from '../../../../components/ui/members-table';
 
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  mobile: string;
-  isMinor: boolean;
-  isRestricted: boolean;
-}
-
-async function getMembers(): Promise<Member[]> {
+async function getMembers(): Promise<ManagedMember[]> {
   // NOTE: server components can't read sessionStorage (client-only) — in a
   // real app the access token would come from an httpOnly cookie set during
   // login via a Route Handler. Shown here as a placeholder fetch so the
   // page renders meaningfully even with an empty/expired token.
   const token = (await cookies()).get('accessToken')?.value;
   try {
-    return await api.get<Member[]>('/tenants/me/members', { accessToken: token });
+    return await api.get<ManagedMember[]>('/tenants/me/members', { accessToken: token });
   } catch {
     return [];
   }
