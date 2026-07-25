@@ -1,6 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { VerifyTenantDto, SetTenantActiveDto, UpdateIntegrationDto, AssignSubscriptionDto } from './dto/super-admin.dto';
+import {
+  AssignSubscriptionDto,
+  ListUsersQueryDto,
+  SetTenantActiveDto,
+  SetUserAccessDto,
+  UpdateIntegrationDto,
+  VerifyTenantDto,
+} from './dto/super-admin.dto';
+
+const PLATFORM_USER_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  mobile: true,
+  email: true,
+  role: true,
+  isActive: true,
+  isRestricted: true,
+  createdAt: true,
+  tenant: { select: { id: true, name: true, city: true } },
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class SuperAdminService {
@@ -25,11 +46,21 @@ export class SuperAdminService {
         id: true,
         name: true,
         slug: true,
+        province: true,
+        county: true,
         city: true,
         isActive: true,
         isVerified: true,
         trustScore: true,
         createdAt: true,
+        _count: { select: { users: true, memberships: true } },
+        subscription: {
+          select: {
+            status: true,
+            renewsAt: true,
+            plan: { select: { code: true, name: true } },
+          },
+        },
       },
     });
   }
@@ -46,6 +77,79 @@ export class SuperAdminService {
     const tenant = await db.tenant.findUnique({ where: { id: tenantId } });
     if (!tenant) throw new NotFoundException('باشگاه یافت نشد.');
     return db.tenant.update({ where: { id: tenantId }, data: { isActive: dto.isActive } });
+  }
+
+  async listUsers(query: ListUsersQueryDto) {
+    const db = this.prisma.forPlatform();
+    const search = query.search?.trim();
+    const where: Prisma.UserWhereInput = {
+      ...(query.role ? { role: query.role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { mobile: { contains: search } },
+              { email: { contains: search, mode: 'insensitive' } },
+              { tenant: { name: { contains: search, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total, activeCount, restrictedCount] = await Promise.all([
+      db.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 250,
+        select: PLATFORM_USER_SELECT,
+      }),
+      db.user.count({ where }),
+      db.user.count({ where: { ...where, isActive: true } }),
+      db.user.count({ where: { ...where, isRestricted: true } }),
+    ]);
+
+    return { items, total, activeCount, restrictedCount };
+  }
+
+  async setUserAccess(userId: string, dto: SetUserAccessDto) {
+    if (dto.isActive === undefined && dto.isRestricted === undefined) {
+      throw new BadRequestException('حداقل یک وضعیت دسترسی باید ارسال شود.');
+    }
+
+    const db = this.prisma.forPlatform();
+    const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true, tenantId: true } });
+    if (!user) throw new NotFoundException('کاربر یافت نشد.');
+    if (user.role === 'SUPER_ADMIN') {
+      throw new ForbiddenException('تغییر دسترسی مدیر ارشد از این بخش مجاز نیست.');
+    }
+
+    return db.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: {
+          ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+          ...(dto.isRestricted !== undefined ? { isRestricted: dto.isRestricted } : {}),
+        },
+        select: PLATFORM_USER_SELECT,
+      });
+      if (dto.isActive === false) {
+        await tx.refreshToken.deleteMany({ where: { userId } });
+      }
+      await tx.auditLog.create({
+        data: {
+          tenantId: user.tenantId,
+          action: 'SUPER_ADMIN_USER_ACCESS_UPDATED',
+          entityType: 'User',
+          entityId: userId,
+          metadata: {
+            ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+            ...(dto.isRestricted !== undefined ? { isRestricted: dto.isRestricted } : {}),
+          },
+        },
+      });
+      return updated;
+    });
   }
 
   rankings() {

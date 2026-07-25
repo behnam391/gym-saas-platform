@@ -1,9 +1,16 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { SuperAdminService } from './super-admin.service';
-import { VerifyTenantDto, SetTenantActiveDto, UpdateIntegrationDto, AssignSubscriptionDto } from './dto/super-admin.dto';
+import {
+  AssignSubscriptionDto,
+  ListUsersQueryDto,
+  SetTenantActiveDto,
+  SetUserAccessDto,
+  UpdateIntegrationDto,
+  VerifyTenantDto,
+} from './dto/super-admin.dto';
 
 @Controller('super-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,6 +36,16 @@ export class SuperAdminController {
   @Patch('tenants/:tenantId/active')
   setTenantActive(@Param('tenantId') tenantId: string, @Body() dto: SetTenantActiveDto) {
     return this.superAdminService.setTenantActive(tenantId, dto);
+  }
+
+  @Get('users')
+  listUsers(@Query() query: ListUsersQueryDto) {
+    return this.superAdminService.listUsers(query);
+  }
+
+  @Patch('users/:userId/access')
+  setUserAccess(@Param('userId') userId: string, @Body() dto: SetUserAccessDto) {
+    return this.superAdminService.setUserAccess(userId, dto);
   }
 
   @Get('rankings')

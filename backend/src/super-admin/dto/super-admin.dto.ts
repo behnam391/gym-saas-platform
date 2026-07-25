@@ -23,3 +23,23 @@ export class AssignSubscriptionDto {
   @IsIn(['TRIAL', 'ACTIVE', 'PAST_DUE', 'SUSPENDED', 'CANCELLED'])
   status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED';
 }
+
+export class ListUsersQueryDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsIn(['SUPER_ADMIN', 'GYM_OWNER', 'TRAINER', 'NUTRITIONIST', 'RECEPTION', 'BUFFET_STAFF', 'ATHLETE'])
+  role?: 'SUPER_ADMIN' | 'GYM_OWNER' | 'TRAINER' | 'NUTRITIONIST' | 'RECEPTION' | 'BUFFET_STAFF' | 'ATHLETE';
+}
+
+export class SetUserAccessDto {
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isRestricted?: boolean;
+}

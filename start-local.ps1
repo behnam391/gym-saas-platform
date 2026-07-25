@@ -14,7 +14,7 @@ function Wait-LocalPort([int]$Port, [string]$Name, [int]$TimeoutSeconds = 60) {
     if (Test-LocalPort $Port) { return }
     Start-Sleep -Milliseconds 500
   }
-  throw "سرویس $Name روی پورت $Port آماده نشد."
+  throw "Service $Name did not become ready on port $Port."
 }
 
 $backendEnv = Join-Path $backendDirectory '.env'
@@ -63,6 +63,8 @@ if (-not (Test-Path (Join-Path $frontendDirectory 'node_modules'))) {
   Pop-Location
 }
 
+$backendAlreadyRunning = Test-LocalPort 3002
+
 if (-not (Test-LocalPort 5432)) {
   Start-Process -FilePath 'npm.cmd' -ArgumentList @('run', 'local:postgres') -WorkingDirectory $backendDirectory -WindowStyle Hidden
 }
@@ -73,12 +75,18 @@ if (-not (Test-LocalPort 6379)) {
 }
 Wait-LocalPort 6379 'Redis' 60
 
-Push-Location $backendDirectory
-npx.cmd prisma generate
-npx.cmd prisma migrate deploy
-npm.cmd run local:rls
-npm.cmd run local:seed
-Pop-Location
+if (-not $backendAlreadyRunning) {
+  Push-Location $backendDirectory
+  npx.cmd prisma generate
+  if ($LASTEXITCODE -ne 0) { throw 'Prisma client generation failed.' }
+  npx.cmd prisma migrate deploy
+  if ($LASTEXITCODE -ne 0) { throw 'Database migration failed.' }
+  npm.cmd run local:rls
+  if ($LASTEXITCODE -ne 0) { throw 'RLS policy setup failed.' }
+  npm.cmd run local:seed
+  if ($LASTEXITCODE -ne 0) { throw 'Local demo data setup failed.' }
+  Pop-Location
+}
 
 if (-not (Test-LocalPort 3002)) {
   Start-Process -FilePath 'npm.cmd' -ArgumentList @('run', 'start:dev') -WorkingDirectory $backendDirectory -WindowStyle Hidden
@@ -91,9 +99,9 @@ Wait-LocalPort 3002 'API' 90
 Wait-LocalPort 3001 'Frontend' 90
 
 Write-Host ''
-Write-Host 'پروژه آماده است:' -ForegroundColor Green
-Write-Host '  سایت: http://localhost:3001'
-Write-Host '  مستندات API: http://localhost:3002/api/docs'
-Write-Host '  رمز همه حساب‌های آزمایشی: demo1234'
+Write-Host 'Local project is ready:' -ForegroundColor Green
+Write-Host '  Website: http://localhost:3001'
+Write-Host '  API docs: http://localhost:3002/api/docs'
+Write-Host '  Demo account password: demo1234'
 Write-Host ''
 Start-Process 'http://localhost:3001'
