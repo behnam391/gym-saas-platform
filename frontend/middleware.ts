@@ -15,7 +15,20 @@ function readRole(token: string): string | null {
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('accessToken')?.value;
-  const loginUrl = new URL('/auth/login', request.url);
+  const portal = request.nextUrl.pathname.startsWith('/dashboard/gym-owner')
+    ? 'owner'
+    : request.nextUrl.pathname.startsWith('/dashboard/super-admin')
+      ? 'admin'
+      : request.nextUrl.pathname.startsWith('/dashboard/nutritionist')
+        ? 'nutritionist'
+        : request.nextUrl.pathname.startsWith('/dashboard/reception')
+          ? 'reception'
+          : request.nextUrl.pathname.startsWith('/dashboard/buffet')
+            ? 'buffet'
+            : request.nextUrl.pathname.startsWith('/dashboard/trainer')
+              ? 'trainer'
+              : 'athlete';
+  const loginUrl = new URL(`/auth/login/${portal}`, request.url);
   loginUrl.searchParams.set('next', request.nextUrl.pathname);
 
   if (!token) return NextResponse.redirect(loginUrl);

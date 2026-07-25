@@ -130,6 +130,7 @@ export class AuthService {
     const db = this.prisma.forPlatform();
     const user = await db.user.findFirst({
       where: {
+        role: dto.expectedRole,
         OR: [{ mobile: dto.identifier }, { nationalId: dto.identifier }],
       },
     });

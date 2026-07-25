@@ -2,7 +2,13 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
-import { CreateAttendanceCredentialDto, CreateAttendanceDeviceDto, DeviceAttendanceEventDto } from './dto/attendance-device.dto';
+import {
+  CreateAttendanceCredentialDto,
+  CreateAttendanceDeviceDto,
+  DeviceAttendanceEventDto,
+  SetAttendanceCredentialStatusDto,
+  SetAttendanceDeviceStatusDto,
+} from './dto/attendance-device.dto';
 
 function digest(value: string) {
   return createHash('sha256').update(value).digest('hex');
@@ -41,6 +47,18 @@ export class AttendanceDevicesService {
     return { ...device, apiKey, eventEndpoint: '/api/v1/attendance-devices/events' };
   }
 
+  async setStatus(deviceId: string, dto: SetAttendanceDeviceStatusDto) {
+    return this.prisma.forTenant(async (tx) => {
+      const device = await tx.attendanceDevice.findUnique({ where: { id: deviceId }, select: { id: true } });
+      if (!device) throw new NotFoundException('دستگاه این باشگاه یافت نشد.');
+      return tx.attendanceDevice.update({
+        where: { id: deviceId },
+        data: { status: dto.status },
+        select: { id: true, name: true, type: true, vendor: true, model: true, serialNumber: true, apiKeyLast4: true, status: true, lastSeenAt: true, createdAt: true },
+      });
+    });
+  }
+
   async addCredential(dto: CreateAttendanceCredentialDto) {
     return this.prisma.forTenant(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: dto.userId }, select: { id: true } });
@@ -56,6 +74,50 @@ export class AttendanceDevicesService {
           label: dto.label,
         },
         update: { userId: dto.userId, label: dto.label, isActive: true },
+        select: {
+          id: true,
+          type: true,
+          identifierLast4: true,
+          label: true,
+          isActive: true,
+          createdAt: true,
+          user: { select: { id: true, firstName: true, lastName: true, mobile: true } },
+        },
+      });
+    });
+  }
+
+  listCredentials() {
+    return this.prisma.forTenant((tx) => tx.attendanceCredential.findMany({
+      select: {
+        id: true,
+        type: true,
+        identifierLast4: true,
+        label: true,
+        isActive: true,
+        createdAt: true,
+        user: { select: { id: true, firstName: true, lastName: true, mobile: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }));
+  }
+
+  async setCredentialStatus(credentialId: string, dto: SetAttendanceCredentialStatusDto) {
+    return this.prisma.forTenant(async (tx) => {
+      const credential = await tx.attendanceCredential.findUnique({ where: { id: credentialId }, select: { id: true } });
+      if (!credential) throw new NotFoundException('شناسه تردد این باشگاه یافت نشد.');
+      return tx.attendanceCredential.update({
+        where: { id: credentialId },
+        data: { isActive: dto.isActive },
+        select: {
+          id: true,
+          type: true,
+          identifierLast4: true,
+          label: true,
+          isActive: true,
+          createdAt: true,
+          user: { select: { id: true, firstName: true, lastName: true, mobile: true } },
+        },
       });
     });
   }

@@ -26,7 +26,11 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
     setLoading(true);
     setError(null);
     try {
-      const session = await api.post<{ role: string }>('/auth/login', { identifier, password });
+      const session = await api.post<{ role: string }>('/auth/login', {
+        identifier,
+        password,
+        expectedRole: config.role,
+      });
       if (session.role !== config.role) {
         await api.post('/auth/logout');
         setError(`این حساب متعلق به درگاه «${config.title}» نیست. درگاه درست را انتخاب کنید.`);
@@ -48,6 +52,14 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
     setPassword('demo1234');
     setError(null);
   }
+
+  const registration = portal === 'athlete'
+    ? { href: '/auth/register/athlete', label: 'ساخت حساب ورزشکار' }
+    : portal === 'owner'
+      ? { href: '/auth/register/gym', label: 'درخواست راه‌اندازی باشگاه' }
+      : portal === 'trainer' || portal === 'nutritionist'
+        ? { href: '/auth/register/professional', label: 'ارسال درخواست همکاری' }
+        : null;
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-4 py-10">
@@ -74,6 +86,9 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
               </button>
             )}
             <p className="flex items-start gap-2 text-xs leading-5 text-muted"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />نشست ورود در کوکی امن نگهداری می‌شود و نقش حساب در همین درگاه کنترل خواهد شد.</p>
+            {registration && <p className="border-t border-border/10 pt-4 text-center text-sm text-muted">حساب این نقش را ندارید؟ <Link href={registration.href} className="font-bold text-accent-soft">{registration.label}</Link></p>}
+            {(portal === 'reception' || portal === 'buffet') && <p className="border-t border-border/10 pt-4 text-center text-xs leading-5 text-muted">حساب پرسنلی فقط توسط صاحب باشگاه ساخته می‌شود.</p>}
+            {portal === 'admin' && <p className="border-t border-border/10 pt-4 text-center text-xs leading-5 text-muted">برای مدیر ارشد هیچ مسیر ثبت‌نام عمومی وجود ندارد.</p>}
           </form>
         </MembershipCard>
       </div>

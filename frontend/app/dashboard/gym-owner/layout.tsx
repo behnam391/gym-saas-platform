@@ -32,7 +32,7 @@ const NAV = [
   { href: '/dashboard/gym-owner/media', label: 'تصاویر باشگاه', icon: Images },
   { href: '/dashboard/gym-owner/gym-profile', label: 'پروفایل باشگاه', icon: Building2 },
   { href: '/dashboard/gym-owner/advertisements', label: 'تبلیغات', icon: Megaphone },
-  { href: '/dashboard/gym-owner/devices', label: 'دستگاه‌های تردد', icon: PlugZap },
+  { href: '/dashboard/gym-owner/devices', label: 'ورود مکانیزه و دستگاه‌ها', icon: PlugZap },
   { href: '/dashboard/gym-owner/banking', label: 'حساب‌های تسویه', icon: Wallet },
   { href: '/dashboard/gym-owner/profile', label: 'پروفایل من', icon: UserRound },
   { href: '/dashboard/gym-owner/tickets', label: 'مرکز تیکت', icon: Ticket },

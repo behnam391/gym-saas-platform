@@ -1,10 +1,11 @@
-import { LayoutDashboard, Building2, Users, BadgeCheck, Wallet, Trophy, Ticket, CreditCard, BarChart3, Bell, PlugZap, Megaphone, UserRound } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, BadgeCheck, Wallet, Trophy, Ticket, CreditCard, BarChart3, Bell, PlugZap, Megaphone, UserRound, ClipboardList } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
   { href: '/dashboard/super-admin', label: 'نمای کلی پلتفرم', icon: LayoutDashboard },
   { href: '/dashboard/super-admin/gyms', label: 'مدیریت باشگاه‌ها', icon: Building2 },
   { href: '/dashboard/super-admin/users', label: 'کاربران', icon: Users },
+  { href: '/dashboard/super-admin/onboarding', label: 'درخواست‌های ثبت‌نام', icon: ClipboardList },
   { href: '/dashboard/super-admin/nutritionists', label: 'تایید متخصصان تغذیه', icon: BadgeCheck },
   { href: '/dashboard/super-admin/financial', label: 'گزارش مالی', icon: Wallet },
   { href: '/dashboard/super-admin/subscriptions', label: 'اشتراک باشگاه‌ها', icon: CreditCard },

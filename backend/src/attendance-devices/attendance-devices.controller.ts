@@ -1,9 +1,15 @@
-import { Body, Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AttendanceDevicesService } from './attendance-devices.service';
-import { CreateAttendanceCredentialDto, CreateAttendanceDeviceDto, DeviceAttendanceEventDto } from './dto/attendance-device.dto';
+import {
+  CreateAttendanceCredentialDto,
+  CreateAttendanceDeviceDto,
+  DeviceAttendanceEventDto,
+  SetAttendanceCredentialStatusDto,
+  SetAttendanceDeviceStatusDto,
+} from './dto/attendance-device.dto';
 
 @Controller('attendance-devices')
 export class AttendanceDevicesController {
@@ -19,10 +25,32 @@ export class AttendanceDevicesController {
   @Roles('GYM_OWNER')
   create(@Body() dto: CreateAttendanceDeviceDto) { return this.service.create(dto); }
 
+  @Patch(':deviceId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER')
+  setStatus(@Param('deviceId') deviceId: string, @Body() dto: SetAttendanceDeviceStatusDto) {
+    return this.service.setStatus(deviceId, dto);
+  }
+
   @Post('credentials')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('GYM_OWNER', 'RECEPTION')
   addCredential(@Body() dto: CreateAttendanceCredentialDto) { return this.service.addCredential(dto); }
+
+  @Get('credentials')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER', 'RECEPTION')
+  listCredentials() { return this.service.listCredentials(); }
+
+  @Patch('credentials/:credentialId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('GYM_OWNER', 'RECEPTION')
+  setCredentialStatus(
+    @Param('credentialId') credentialId: string,
+    @Body() dto: SetAttendanceCredentialStatusDto,
+  ) {
+    return this.service.setCredentialStatus(credentialId, dto);
+  }
 
   @Post('events')
   ingest(@Headers('x-device-key') apiKey: string | undefined, @Body() dto: DeviceAttendanceEventDto) {

@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { Role } from '@prisma/client';
+import { IsEnum, IsString, IsNotEmpty } from 'class-validator';
 
 export class LoginDto {
   @IsString({ message: 'موبایل یا کد ملی الزامی است.' })
@@ -8,6 +9,9 @@ export class LoginDto {
   @IsString({ message: 'رمز عبور الزامی است.' })
   @IsNotEmpty({ message: 'رمز عبور الزامی است.' })
   password: string;
+
+  @IsEnum(Role, { message: 'درگاه ورود نامعتبر است.' })
+  expectedRole: Role;
 }
 
 export class RefreshDto {

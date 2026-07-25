@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 const DEVICE_TYPES = ['CARD', 'FINGERPRINT', 'FACE_RECOGNITION', 'NFC_PHONE'] as const;
 
@@ -21,4 +21,14 @@ export class DeviceAttendanceEventDto {
   @IsIn(DEVICE_TYPES) type: typeof DEVICE_TYPES[number];
   @IsString() @MaxLength(250) identifier: string;
   @IsIn(['CHECK_IN', 'CHECK_OUT']) action: 'CHECK_IN' | 'CHECK_OUT';
+}
+
+export class SetAttendanceDeviceStatusDto {
+  @IsIn(['PENDING', 'CONNECTED', 'OFFLINE', 'DISABLED'])
+  status: 'PENDING' | 'CONNECTED' | 'OFFLINE' | 'DISABLED';
+}
+
+export class SetAttendanceCredentialStatusDto {
+  @IsBoolean()
+  isActive: boolean;
 }

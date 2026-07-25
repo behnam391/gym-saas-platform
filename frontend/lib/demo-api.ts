@@ -172,7 +172,7 @@ export async function demoRequest(path: string, options: DemoRequestOptions = {}
 
   if (method === 'POST' && pathname === '/auth/login') {
     const account = demoAccounts[String(body.identifier ?? '').trim()];
-    if (!account || body.password !== 'demo1234') {
+    if (!account || body.password !== 'demo1234' || body.expectedRole !== account.role) {
       return json({ message: 'برای ورود دمو، یکی از حساب‌های پیشنهادی و رمز demo1234 را استفاده کنید.' }, 401);
     }
     return json({

@@ -182,3 +182,27 @@ describe('AuthService.refresh', () => {
     expect(db.refreshToken.create).not.toHaveBeenCalled();
   });
 });
+
+describe('AuthService.login', () => {
+  it('binds credentials to the selected role portal before issuing tokens', async () => {
+    const db = {
+      user: { findFirst: jest.fn().mockResolvedValue(null) },
+      refreshToken: { create: jest.fn() },
+    };
+    const service = makeService(db);
+
+    await expect(service.login({
+      identifier: '09120000001',
+      password: 'StrongPass123',
+      expectedRole: 'ATHLETE',
+    })).rejects.toThrow(UnauthorizedException);
+
+    expect(db.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        role: 'ATHLETE',
+        OR: [{ mobile: '09120000001' }, { nationalId: '09120000001' }],
+      },
+    });
+    expect(db.refreshToken.create).not.toHaveBeenCalled();
+  });
+});

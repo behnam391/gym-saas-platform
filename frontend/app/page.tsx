@@ -4,7 +4,8 @@ import { GymCard } from '../components/ui/gym-card';
 import { SiteHeader } from '../components/ui/site-header';
 import { BadgeCheck, Building2, ShieldCheck, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { Megaphone, MapPin } from 'lucide-react';
+import { LogIn, Megaphone, MapPin, UserPlus } from 'lucide-react';
+import { buttonStyles } from '../components/ui/button';
 
 interface TenantSummary {
   id: string;
@@ -90,6 +91,10 @@ export default async function HomePage({
         </div>
         <div className="mt-8 flex justify-center">
           <MarketplaceSearchBar />
+        </div>
+        <div className="relative mt-5 flex flex-wrap justify-center gap-3">
+          <Link href="/auth/register/athlete" className={buttonStyles({ size: 'sm' })}><UserPlus className="size-4" />ثبت‌نام ورزشکار</Link>
+          <Link href="/auth/login" className={buttonStyles({ variant: 'secondary', size: 'sm' })}><LogIn className="size-4" />همه درگاه‌های ورود</Link>
         </div>
         <div className="relative mx-auto mt-7 grid max-w-3xl grid-cols-3 gap-3 text-right">
           {[

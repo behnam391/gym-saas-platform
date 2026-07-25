@@ -1,136 +1,75 @@
-'use client';
-
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  Building2,
+  Dumbbell,
+  ShieldCheck,
+  Stethoscope,
+  UserCog,
+} from 'lucide-react';
 import { MembershipCard } from '../../../components/ui/membership-card';
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { api, ApiError } from '../../../lib/api';
 
-interface FormState {
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  mobile: string;
-  email: string;
-  password: string;
-  gender: 'MALE' | 'FEMALE';
-  dateOfBirth: string;
-  city: string;
-  address: string;
-}
-
-const initial: FormState = {
-  firstName: '',
-  lastName: '',
-  nationalId: '',
-  mobile: '',
-  email: '',
-  password: '',
-  gender: 'MALE',
-  dateOfBirth: '',
-  city: '',
-  address: '',
-};
-
-function RegisterForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [form, setForm] = useState<FormState>(initial);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const tenantId = searchParams.get('tenantId') ?? undefined;
-      const membershipPlanId = searchParams.get('membershipPlanId') ?? undefined;
-      const payload = {
-        ...form,
-        email: form.email.trim() || undefined,
-        tenantId,
-        membershipPlanId,
-      };
-      const res = await api.post<{ message: string }>('/auth/register', payload);
-      setMessage(res.message);
-      setTimeout(() => router.push('/auth/login'), 1500);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'خطایی رخ داد. دوباره تلاش کنید.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <main className="mx-auto flex min-h-screen max-w-lg items-center px-6 py-12">
-      <MembershipCard className="w-full">
-        <h1 className="mb-1 text-2xl font-extrabold">ثبت‌نام در سامانه</h1>
-        <p className="mb-6 text-sm text-muted">
-          {searchParams.has('membershipPlanId')
-            ? 'پس از ثبت‌نام، درخواست عضویت شما برای باشگاه ثبت می‌شود و با تایید بیمه ورزشی فعال خواهد شد.'
-            : 'اگر سن شما کمتر از ۱۸ سال است، حساب کاربری تا تایید رضایت‌نامه والدین محدود خواهد بود.'}
-        </p>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-          <Input label="نام" value={form.firstName} onChange={(e) => update('firstName', e.target.value)} required />
-          <Input label="نام خانوادگی" value={form.lastName} onChange={(e) => update('lastName', e.target.value)} required />
-          <Input label="کد ملی" value={form.nationalId} onChange={(e) => update('nationalId', e.target.value)} required className="col-span-2" />
-          <Input label="موبایل" value={form.mobile} onChange={(e) => update('mobile', e.target.value)} required className="col-span-2" />
-          <Input label="ایمیل (اختیاری)" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} className="col-span-2" />
-          <Input label="رمز عبور" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required className="col-span-2" />
-
-          <div className="col-span-1 flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-muted">جنسیت</label>
-            <select
-              value={form.gender}
-              onChange={(e) => update('gender', e.target.value as 'MALE' | 'FEMALE')}
-              className="h-11 rounded-xl border border-border/10 bg-surface px-3 text-sm text-ink"
-            >
-              <option value="MALE">مرد</option>
-              <option value="FEMALE">زن</option>
-            </select>
-          </div>
-          <Input
-            label="تاریخ تولد"
-            type="date"
-            value={form.dateOfBirth}
-            onChange={(e) => update('dateOfBirth', e.target.value)}
-            required
-          />
-          <Input label="شهر" value={form.city} onChange={(e) => update('city', e.target.value)} className="col-span-2" />
-          <Input label="آدرس" value={form.address} onChange={(e) => update('address', e.target.value)} className="col-span-2" />
-
-          {message && <p className="col-span-2 text-sm text-success">{message}</p>}
-          {error && <p className="col-span-2 text-sm text-danger">{error}</p>}
-
-          <Button type="submit" disabled={loading} className="col-span-2 mt-2 w-full">
-            {loading ? 'در حال ثبت‌نام…' : 'ثبت‌نام'}
-          </Button>
-        </form>
-      </MembershipCard>
-    </main>
-  );
-}
+const OPTIONS = [
+  {
+    href: '/auth/register/athlete',
+    title: 'ثبت‌نام ورزشکار',
+    description: 'ساخت حساب شخصی، انتخاب باشگاه و درخواست عضویت',
+    icon: Dumbbell,
+    badge: 'ثبت‌نام مستقیم',
+  },
+  {
+    href: '/auth/register/gym',
+    title: 'راه‌اندازی پنل باشگاه',
+    description: 'ثبت مشخصات مجموعه و درخواست بررسی برای صاحب باشگاه',
+    icon: Building2,
+    badge: 'نیازمند تأیید',
+  },
+  {
+    href: '/auth/register/professional',
+    title: 'درخواست همکاری حرفه‌ای',
+    description: 'مسیر جداگانه مربیان و متخصصان تغذیه برای بررسی صلاحیت',
+    icon: Stethoscope,
+    badge: 'بررسی مدارک',
+  },
+  {
+    href: '/auth/register/staff',
+    title: 'پذیرش و بوفه',
+    description: 'حساب پرسنل فقط با دعوت و تأیید صاحب باشگاه ایجاد می‌شود',
+    icon: UserCog,
+    badge: 'فقط با دعوت',
+  },
+];
 
 export default function RegisterPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="mx-auto flex min-h-screen max-w-lg items-center px-6 py-12">
-          <MembershipCard className="w-full text-center text-muted">
-            در حال آماده‌سازی فرم ثبت‌نام…
-          </MembershipCard>
-        </main>
-      }
-    >
-      <RegisterForm />
-    </Suspense>
+    <main className="relative min-h-screen overflow-hidden px-4 py-10 sm:py-16">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(228,199,102,.16),transparent_35%),radial-gradient(circle_at_10%_100%,rgba(76,175,109,.12),transparent_30%)]" />
+      <div className="relative mx-auto max-w-5xl">
+        <Link href="/" className="mb-10 inline-flex items-center gap-2 font-extrabold text-accent-soft">
+          <Dumbbell className="size-5" /> باشگاه‌یار
+        </Link>
+        <div className="max-w-2xl">
+          <p className="flex items-center gap-2 text-sm font-bold text-success"><ShieldCheck className="size-4" /> ثبت‌نام تفکیک‌شده و کنترل‌شده</p>
+          <h1 className="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl">نوع حسابی که نیاز دارید را انتخاب کنید</h1>
+          <p className="mt-4 leading-7 text-muted">ورزشکاران مستقیماً حساب می‌سازند؛ حساب‌های مدیریتی، حرفه‌ای و پرسنلی پس از بررسی یا دعوت فعال می‌شوند.</p>
+        </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
+          {OPTIONS.map(({ href, title, description, icon: Icon, badge }) => (
+            <Link key={href} href={href} className="group">
+              <MembershipCard className="flex h-full items-start gap-4 transition group-hover:-translate-y-1 group-hover:border-accent/30">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent/10 text-accent-soft"><Icon className="size-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-accent-soft">{badge}</span>
+                  <span className="mt-1 block text-lg font-extrabold">{title}</span>
+                  <span className="mt-2 block text-sm leading-6 text-muted">{description}</span>
+                </span>
+                <ArrowLeft className="mt-4 size-4 text-muted transition group-hover:-translate-x-1" />
+              </MembershipCard>
+            </Link>
+          ))}
+        </div>
+        <p className="mt-8 text-center text-sm text-muted">قبلاً حساب ساخته‌اید؟ <Link href="/auth/login" className="font-bold text-accent-soft">انتخاب درگاه ورود</Link></p>
+      </div>
+    </main>
   );
 }

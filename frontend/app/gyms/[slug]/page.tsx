@@ -120,7 +120,7 @@ export default async function GymDetailPage({ params }: { params: Promise<{ slug
                       <span className="mr-1 text-sm font-normal text-muted">تومان</span>
                     </p>
                     <Link
-                      href={`/auth/register?tenantId=${gym.id}&membershipPlanId=${plan.id}`}
+                      href={`/auth/register/athlete?tenantId=${gym.id}&membershipPlanId=${plan.id}`}
                       className={buttonStyles({ className: 'mt-5 w-full' })}
                     >
                       درخواست عضویت
@@ -209,7 +209,7 @@ export default async function GymDetailPage({ params }: { params: Promise<{ slug
                 {gym.phone && <p className="flex items-center gap-2"><Phone className="size-4 text-accent-soft" />{gym.phone}</p>}
                 {gym.email && <p className="flex items-center gap-2"><Mail className="size-4 text-accent-soft" />{gym.email}</p>}
               </div>
-              <Link href={`/auth/register?tenantId=${gym.id}`} className={buttonStyles({ variant: 'secondary', className: 'mt-5 w-full' })}>
+              <Link href={`/auth/register/athlete?tenantId=${gym.id}`} className={buttonStyles({ variant: 'secondary', className: 'mt-5 w-full' })}>
                 <MessageCircle className="size-4" />
                 درخواست مشاوره
               </Link>
@@ -220,4 +220,3 @@ export default async function GymDetailPage({ params }: { params: Promise<{ slug
     </>
   );
 }
-
