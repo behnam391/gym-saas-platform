@@ -4,8 +4,6 @@ import {
   Building2,
   Dumbbell,
   ShieldCheck,
-  Stethoscope,
-  UserCog,
 } from 'lucide-react';
 import { MembershipCard } from '../../../components/ui/membership-card';
 
@@ -24,20 +22,6 @@ const OPTIONS = [
     icon: Building2,
     badge: 'نیازمند تأیید',
   },
-  {
-    href: '/auth/register/professional',
-    title: 'درخواست همکاری حرفه‌ای',
-    description: 'مسیر جداگانه مربیان و متخصصان تغذیه برای بررسی صلاحیت',
-    icon: Stethoscope,
-    badge: 'بررسی مدارک',
-  },
-  {
-    href: '/auth/register/staff',
-    title: 'پذیرش و بوفه',
-    description: 'حساب پرسنل فقط با دعوت و تأیید صاحب باشگاه ایجاد می‌شود',
-    icon: UserCog,
-    badge: 'فقط با دعوت',
-  },
 ];
 
 export default function RegisterPage() {
@@ -51,7 +35,7 @@ export default function RegisterPage() {
         <div className="max-w-2xl">
           <p className="flex items-center gap-2 text-sm font-bold text-success"><ShieldCheck className="size-4" /> ثبت‌نام تفکیک‌شده و کنترل‌شده</p>
           <h1 className="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl">نوع حسابی که نیاز دارید را انتخاب کنید</h1>
-          <p className="mt-4 leading-7 text-muted">ورزشکاران مستقیماً حساب می‌سازند؛ حساب‌های مدیریتی، حرفه‌ای و پرسنلی پس از بررسی یا دعوت فعال می‌شوند.</p>
+          <p className="mt-4 leading-7 text-muted">ثبت‌نام عمومی فقط برای ورزشکار و مدیر باشگاه فعال است. حساب پرسنل و متخصصان از داخل پنل مدیریت صادر می‌شود.</p>
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {OPTIONS.map(({ href, title, description, icon: Icon, badge }) => (
@@ -68,7 +52,7 @@ export default function RegisterPage() {
             </Link>
           ))}
         </div>
-        <p className="mt-8 text-center text-sm text-muted">قبلاً حساب ساخته‌اید؟ <Link href="/auth/login" className="font-bold text-accent-soft">انتخاب درگاه ورود</Link></p>
+        <p className="mt-8 text-center text-sm text-muted">قبلاً حساب ساخته‌اید؟ <Link href="/auth/login" className="font-bold text-accent-soft">ورود به حساب</Link></p>
       </div>
     </main>
   );

@@ -2,10 +2,10 @@ import { api } from '../lib/api';
 import { MarketplaceSearchBar } from '../components/ui/marketplace-search-bar';
 import { GymCard } from '../components/ui/gym-card';
 import { SiteHeader } from '../components/ui/site-header';
-import { BadgeCheck, Building2, ShieldCheck, Sparkles } from 'lucide-react';
+import { BadgeCheck, Building2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { LogIn, Megaphone, MapPin, UserPlus } from 'lucide-react';
-import { buttonStyles } from '../components/ui/button';
+import { Megaphone, MapPin } from 'lucide-react';
+import { HeroSlide, PublicHeroSlider } from '../components/ui/public-hero-slider';
 
 interface TenantSummary {
   id: string;
@@ -60,43 +60,26 @@ async function getAdvertisements(params: MarketplaceParams): Promise<Advertiseme
   try { return await api.get<Advertisement[]>(`/advertisements/public${query.size ? `?${query}` : ''}`); } catch { return []; }
 }
 
+async function getHeroSlides(): Promise<HeroSlide[]> {
+  try { return await api.get<HeroSlide[]>('/site-content/hero-slides'); } catch { return []; }
+}
+
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<MarketplaceParams>;
 }) {
   const params = await searchParams;
-  const [gyms, advertisements] = await Promise.all([getGyms(params), getAdvertisements(params)]);
+  const [gyms, advertisements, heroSlides] = await Promise.all([getGyms(params), getAdvertisements(params), getHeroSlides()]);
 
   return (
     <>
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-      {/* ===== Hero ===== */}
-      <section className="relative mb-14 overflow-hidden rounded-[2rem] border border-border/10 bg-surface px-5 py-12 text-center sm:px-10 sm:py-16">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(201,162,39,.16),transparent_35%),radial-gradient(circle_at_10%_100%,rgba(76,175,109,.10),transparent_30%)]" />
-        <div className="relative">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1.5 text-sm font-semibold text-accent-soft">
-            <Sparkles className="size-4" />
-            انتخاب هوشمند باشگاه ورزشی
-          </p>
-          <h1 className="text-4xl font-extrabold leading-[1.25] sm:text-6xl">
-            باشگاه مناسب تو،
-            <br />
-            <span className="text-accent">شفاف و مطمئن</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl leading-7 text-muted">
-            قیمت، امکانات، اعتبار و شلوغی باشگاه‌ها را مقایسه کن؛ آنلاین عضو شو و تمام مسیر ورزشی‌ات را در یک پنل حرفه‌ای مدیریت کن.
-          </p>
-        </div>
-        <div className="mt-8 flex justify-center">
-          <MarketplaceSearchBar />
-        </div>
-        <div className="relative mt-5 flex flex-wrap justify-center gap-3">
-          <Link href="/auth/register/athlete" className={buttonStyles({ size: 'sm' })}><UserPlus className="size-4" />ثبت‌نام ورزشکار</Link>
-          <Link href="/auth/login" className={buttonStyles({ variant: 'secondary', size: 'sm' })}><LogIn className="size-4" />همه درگاه‌های ورود</Link>
-        </div>
-        <div className="relative mx-auto mt-7 grid max-w-3xl grid-cols-3 gap-3 text-right">
+      <PublicHeroSlider slides={heroSlides} />
+      <section className="relative mb-14 rounded-[2rem] border border-border/10 bg-surface p-5 sm:p-7">
+        <div className="flex justify-center"><MarketplaceSearchBar /></div>
+        <div className="relative mx-auto mt-6 grid max-w-3xl grid-cols-3 gap-3 text-right">
           {[
             { icon: Building2, value: '+۴۸', label: 'باشگاه تاییدشده' },
             { icon: ShieldCheck, value: 'امن', label: 'عضویت و پرداخت' },

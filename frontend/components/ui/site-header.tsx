@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Dumbbell, LogIn, UserPlus } from 'lucide-react';
+import { Building2, Dumbbell, UsersRound } from 'lucide-react';
 import { buttonStyles } from './button';
 import { ThemeToggle } from './theme-toggle';
 
@@ -20,28 +20,20 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2">
           <ThemeToggle />
           <Link
-            href="/auth/login/athlete"
-            aria-label="ورود ورزشکار"
+            href="/access/athlete"
+            aria-label="ورود یا ثبت‌نام ورزشکار"
             className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'gap-2' })}
           >
-            <LogIn className="size-4" />
-            <span className="hidden md:inline">ورود ورزشکار</span>
+            <UsersRound className="size-4" />
+            <span className="hidden md:inline">ورزشکار</span>
           </Link>
           <Link
-            href="/auth/login/owner"
-            aria-label="ورود صاحب باشگاه"
-            className={buttonStyles({ variant: 'secondary', size: 'sm', className: 'hidden gap-2 sm:inline-flex' })}
-          >
-            <Building2 className="size-4" />
-            <span className="hidden lg:inline">ورود باشگاه</span>
-          </Link>
-          <Link
-            href="/auth/register/gym"
-            aria-label="ثبت باشگاه"
+            href="/access/gym-owner"
+            aria-label="ورود یا ثبت‌نام مدیر باشگاه"
             className={buttonStyles({ size: 'sm', className: 'gap-2' })}
           >
-            <UserPlus className="size-4" />
-            <span className="hidden sm:inline">ثبت باشگاه</span>
+            <Building2 className="size-4" />
+            <span className="hidden sm:inline">مدیر باشگاه</span>
           </Link>
         </nav>
       </div>

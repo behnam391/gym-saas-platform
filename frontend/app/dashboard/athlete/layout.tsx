@@ -1,4 +1,4 @@
-import { LayoutDashboard, Dumbbell, Utensils, Wallet, Bell, MessageSquare, UserRound, Ruler, TrendingUp, History, Users, ShoppingBag, Target, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Utensils, Wallet, Bell, MessageSquare, UserRound, Ruler, TrendingUp, History, Users, ShoppingBag, Target, LifeBuoy, Stethoscope } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
   { href: '/dashboard/athlete/measurements', label: 'اندازه‌گیری‌ها', icon: Ruler },
   { href: '/dashboard/athlete/programs', label: 'برنامه تمرینی', icon: Dumbbell },
   { href: '/dashboard/athlete/diet', label: 'برنامه غذایی', icon: Utensils },
+  { href: '/dashboard/athlete/experts', label: 'مربی و مشاور سراسری', icon: Stethoscope },
   { href: '/dashboard/athlete/progress', label: 'روند پیشرفت', icon: TrendingUp },
   { href: '/dashboard/athlete/attendance', label: 'سوابق حضور', icon: History },
   { href: '/dashboard/athlete/crowd', label: 'وضعیت شلوغی', icon: Users },

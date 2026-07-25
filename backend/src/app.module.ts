@@ -27,6 +27,9 @@ import { FinancialAccountsModule } from './financial-accounts/financial-accounts
 import { AttendanceDevicesModule } from './attendance-devices/attendance-devices.module';
 import { AdvertisementsModule } from './advertisements/advertisements.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { TenantStaffModule } from './tenant-staff/tenant-staff.module';
+import { PlatformProfessionalsModule } from './platform-professionals/platform-professionals.module';
+import { SiteContentModule } from './site-content/site-content.module';
 
 @Module({
   imports: [
@@ -56,6 +59,9 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     AttendanceDevicesModule,
     AdvertisementsModule,
     OnboardingModule,
+    TenantStaffModule,
+    PlatformProfessionalsModule,
+    SiteContentModule,
   ],
 })
 export class AppModule implements NestModule {

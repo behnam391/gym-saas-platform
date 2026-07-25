@@ -209,6 +209,25 @@ enum OnboardingApplicationStatus {
   REJECTED
 }
 
+enum PlatformProfessionalType {
+  TRAINER
+  NUTRITIONIST
+}
+
+enum ProfessionalServiceMode {
+  ONLINE
+  IN_PERSON
+  HYBRID
+}
+
+enum ConsultationStatus {
+  REQUESTED
+  CONTACTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 // ============================================================================
 // TENANT (GYM) — root of all tenant-scoped data
 // ============================================================================
@@ -360,6 +379,7 @@ model User {
   nutritionistClients   NutritionistClient[]   @relation("ClientSide")
   financialAccounts     FinancialAccount[]
   attendanceCredentials AttendanceCredential[]
+  consultationRequests  ConsultationRequest[]  @relation("AthleteConsultations")
 
   @@index([tenantId, role])
   @@index([nationalId])
@@ -506,8 +526,8 @@ model NutritionistProfile {
   userId           String             @unique
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio              String?            @db.Text
-  nationalIdDocUrl String
-  certificateUrl   String
+  nationalIdDocUrl String?
+  certificateUrl   String?
   profileImageUrl  String?
   status           VerificationStatus @default(PENDING) // approved ONLY by Super Admin
   approvedById     String?
@@ -988,6 +1008,62 @@ model OnboardingApplication {
 
   @@index([type, status, createdAt])
   @@index([mobile, type])
+}
+
+model HeroSlide {
+  id          String   @id @default(uuid())
+  eyebrow     String?
+  title       String
+  subtitle    String?  @db.Text
+  imageUrl    String
+  imageCredit String?
+  ctaLabel    String?
+  ctaUrl      String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model PlatformProfessional {
+  id              String                   @id @default(uuid())
+  type            PlatformProfessionalType
+  fullName        String
+  profileImageUrl String?
+  bio             String?                  @db.Text
+  specialties     String[]
+  province        String?
+  city            String?
+  serviceMode     ProfessionalServiceMode  @default(ONLINE)
+  consultationFee Decimal?                 @db.Decimal(12, 2)
+  rating          Float                    @default(0)
+  isFeatured      Boolean                  @default(false)
+  isActive        Boolean                  @default(true)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  consultationRequests ConsultationRequest[]
+
+  @@index([type, isActive, isFeatured])
+  @@index([province, city])
+}
+
+model ConsultationRequest {
+  id             String               @id @default(uuid())
+  professionalId String
+  professional   PlatformProfessional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  athleteId      String
+  athlete        User                 @relation("AthleteConsultations", fields: [athleteId], references: [id], onDelete: Cascade)
+  preferredAt    DateTime?
+  message        String?              @db.Text
+  status         ConsultationStatus   @default(REQUESTED)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([athleteId, status, createdAt])
+  @@index([professionalId, status, createdAt])
 }
 
 // ============================================================================

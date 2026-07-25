@@ -10,6 +10,7 @@ export const UPLOAD_PURPOSES = [
   'NUTRITIONIST_CERTIFICATE',
   'NUTRITIONIST_NATIONAL_ID',
   'PRODUCT_IMAGE',
+  'HERO_SLIDE',
 ] as const;
 
 export class RequestUploadUrlDto {

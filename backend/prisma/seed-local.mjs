@@ -414,5 +414,70 @@ await prisma.financialAccount.upsert({
   update: { iban: 'IR120170000000123456789012', cardLast4: '3912', isDefault: true },
 });
 
-console.log('LOCAL_SEED_READY=10 demo accounts, 3 gyms, buffet + platform operations');
+await prisma.heroSlide.upsert({
+  where: { id: '80000000-0000-4000-8000-000000000001' },
+  create: {
+    id: '80000000-0000-4000-8000-000000000001',
+    eyebrow: 'قدرت از یک تصمیم شروع می‌شود',
+    title: 'قهرمان خودت باش',
+    subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
+    imageUrl: 'https://images.pexels.com/photos/32085332/pexels-photo-32085332.jpeg?cs=srgb&fm=jpg&w=1920&h=1080&fit=crop',
+    imageCredit: 'Photo by foad shariyati on Pexels',
+    ctaLabel: 'شروع به‌عنوان ورزشکار',
+    ctaUrl: '/access/athlete',
+    sortOrder: 0,
+    isActive: true,
+  },
+  update: {
+    eyebrow: 'قدرت از یک تصمیم شروع می‌شود',
+    title: 'قهرمان خودت باش',
+    subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
+    imageUrl: 'https://images.pexels.com/photos/32085332/pexels-photo-32085332.jpeg?cs=srgb&fm=jpg&w=1920&h=1080&fit=crop',
+    imageCredit: 'Photo by foad shariyati on Pexels',
+    ctaLabel: 'شروع به‌عنوان ورزشکار',
+    ctaUrl: '/access/athlete',
+    sortOrder: 0,
+    isActive: true,
+  },
+});
+
+const platformProfessionals = [
+  {
+    id: '80000000-0000-4000-8000-000000000011',
+    type: 'TRAINER',
+    fullName: 'آریا فرهمند',
+    bio: 'مربی بدنسازی و آمادگی جسمانی با تمرکز بر طراحی برنامه آنلاین و پایش پیشرفت.',
+    specialties: ['بدنسازی', 'آمادگی جسمانی', 'برنامه تمرینی آنلاین'],
+    province: 'تهران',
+    city: 'تهران',
+    serviceMode: 'HYBRID',
+    consultationFee: 780000,
+    rating: 4.8,
+    isFeatured: true,
+    isActive: true,
+  },
+  {
+    id: '80000000-0000-4000-8000-000000000012',
+    type: 'NUTRITIONIST',
+    fullName: 'نازنین پارسا',
+    bio: 'متخصص تغذیه ورزشی برای کاهش چربی، افزایش توده عضلانی و اصلاح عادت‌های غذایی.',
+    specialties: ['تغذیه ورزشی', 'کاهش چربی', 'افزایش حجم'],
+    province: 'فارس',
+    city: 'شیراز',
+    serviceMode: 'ONLINE',
+    consultationFee: 650000,
+    rating: 4.9,
+    isFeatured: true,
+    isActive: true,
+  },
+];
+for (const professional of platformProfessionals) {
+  await prisma.platformProfessional.upsert({
+    where: { id: professional.id },
+    create: professional,
+    update: professional,
+  });
+}
+
+console.log('LOCAL_SEED_READY=10 demo accounts, 3 gyms, staff, experts, hero + platform operations');
 await prisma.$disconnect();

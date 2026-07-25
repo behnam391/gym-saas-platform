@@ -16,6 +16,7 @@ const ALLOWED_CONTENT_TYPES: Record<string, string[]> = {
   NUTRITIONIST_CERTIFICATE: ['image/jpeg', 'image/png', 'application/pdf'],
   NUTRITIONIST_NATIONAL_ID: ['image/jpeg', 'image/png', 'application/pdf'],
   PRODUCT_IMAGE: ['image/jpeg', 'image/png', 'image/webp'],
+  HERO_SLIDE: ['image/jpeg', 'image/png', 'image/webp'],
 };
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // enforced via S3 policy condition below

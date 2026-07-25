@@ -16,12 +16,14 @@ import {
   PlugZap,
   UserRound,
   Building2,
+  UserCog,
 } from 'lucide-react';
 import { DashboardShell } from '../../../components/ui/dashboard-shell';
 
 const NAV = [
   { href: '/dashboard/gym-owner', label: 'نمای کلی', icon: LayoutDashboard },
   { href: '/dashboard/gym-owner/members', label: 'اعضا', icon: Users },
+  { href: '/dashboard/gym-owner/staff', label: 'پرسنل و دسترسی‌ها', icon: UserCog },
   { href: '/dashboard/gym-owner/memberships', label: 'عضویت‌ها', icon: ClipboardCheck },
   { href: '/dashboard/gym-owner/attendance', label: 'حضور و غیاب', icon: CreditCard },
   { href: '/dashboard/gym-owner/revenue', label: 'درآمد', icon: Wallet },

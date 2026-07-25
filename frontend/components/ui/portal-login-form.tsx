@@ -57,16 +57,19 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
     ? { href: '/auth/register/athlete', label: 'ساخت حساب ورزشکار' }
     : portal === 'owner'
       ? { href: '/auth/register/gym', label: 'درخواست راه‌اندازی باشگاه' }
-      : portal === 'trainer' || portal === 'nutritionist'
-        ? { href: '/auth/register/professional', label: 'ارسال درخواست همکاری' }
-        : null;
+      : null;
+  const backHref = portal === 'athlete'
+    ? '/access/athlete'
+    : portal === 'owner'
+      ? '/access/gym-owner'
+      : '/';
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(228,199,102,.16),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(76,175,109,.12),transparent_30%)]" />
       <div className="relative w-full max-w-md">
-        <Link href="/auth/login" className="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink">
-          <ArrowRight className="size-4" /> انتخاب درگاه دیگر
+        <Link href={backHref} className="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink">
+          <ArrowRight className="size-4" /> بازگشت
         </Link>
         <MembershipCard className="overflow-hidden p-0">
           <div className="border-b border-border/10 bg-surface-raised p-6 sm:p-8">
@@ -88,6 +91,7 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
             <p className="flex items-start gap-2 text-xs leading-5 text-muted"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />نشست ورود در کوکی امن نگهداری می‌شود و نقش حساب در همین درگاه کنترل خواهد شد.</p>
             {registration && <p className="border-t border-border/10 pt-4 text-center text-sm text-muted">حساب این نقش را ندارید؟ <Link href={registration.href} className="font-bold text-accent-soft">{registration.label}</Link></p>}
             {(portal === 'reception' || portal === 'buffet') && <p className="border-t border-border/10 pt-4 text-center text-xs leading-5 text-muted">حساب پرسنلی فقط توسط صاحب باشگاه ساخته می‌شود.</p>}
+            {(portal === 'trainer' || portal === 'nutritionist') && <p className="border-t border-border/10 pt-4 text-center text-xs leading-5 text-muted">حساب این بخش توسط مدیر باشگاه یا مدیریت اصلی سامانه صادر می‌شود.</p>}
             {portal === 'admin' && <p className="border-t border-border/10 pt-4 text-center text-xs leading-5 text-muted">برای مدیر ارشد هیچ مسیر ثبت‌نام عمومی وجود ندارد.</p>}
           </form>
         </MembershipCard>
