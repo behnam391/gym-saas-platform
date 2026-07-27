@@ -269,15 +269,17 @@
         <div class="container collaboration-card reveal">
           <div>
             <p class="section-label">همراهان اولین قدم</p>
-            <h2>باشگاه شما می‌تواند جزو اولین‌ها باشد</h2>
+            <h2>جزو اولین همراهان گُردیار باشید</h2>
             <p>
-              نسخه پایلوت گُردیار برای همکاری با تعداد محدودی باشگاه آماده می‌شود.
-              جزئیات ثبت درخواست به‌زودی در همین صفحه اعلام خواهد شد.
+              برای دریافت دسترسی زودهنگام، همکاری در نسخه پایلوت و اطلاع از زمان
+              شروع فعالیت گُردیار، درخواست خود را ثبت کنید.
             </p>
           </div>
-          <div class="coming-badge">
-            <span class="status-dot"></span>
-            پیش‌ثبت‌نام به‌زودی
+          <div class="collaboration-action">
+            <button class="button button-primary" type="button" data-open-preregister>
+              پیش‌ثبت‌نام رایگان
+            </button>
+            <small>ثبت درخواست کمتر از ۲ دقیقه زمان می‌برد</small>
           </div>
         </div>
       </section>
@@ -296,6 +298,131 @@
         </div>
       </div>
     </footer>
+
+    <dialog class="registration-dialog" data-registration-dialog aria-labelledby="registration-title">
+      <div class="dialog-shell">
+        <div class="dialog-heading">
+          <div>
+            <p class="section-label">همراهان اولیه گُردیار</p>
+            <h2 id="registration-title">فرم پیش‌ثبت‌نام</h2>
+            <p>اطلاعات اولیه را وارد کنید؛ پس از بررسی برای هماهنگی با شما تماس می‌گیریم.</p>
+          </div>
+          <button class="dialog-close" type="button" data-close-preregister aria-label="بستن فرم">×</button>
+        </div>
+
+        <form class="registration-form" data-registration-form novalidate>
+          <input class="form-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <input type="hidden" name="formStartedAt" data-form-started-at />
+
+          <div class="form-grid">
+            <label class="field">
+              <span>به‌عنوان چه کسی ثبت‌نام می‌کنید؟</span>
+              <select name="role" required>
+                <option value="">انتخاب کنید</option>
+                <option value="gym_owner">مدیر یا مالک باشگاه</option>
+                <option value="athlete">ورزشکار</option>
+                <option value="coach">مربی</option>
+                <option value="nutritionist">مشاور تغذیه</option>
+                <option value="partner">همکار تجاری یا تأمین‌کننده</option>
+              </select>
+              <small class="field-error" data-error-for="role"></small>
+            </label>
+
+            <label class="field">
+              <span>نام و نام خانوادگی</span>
+              <input name="fullName" type="text" maxlength="80" autocomplete="name" placeholder="مثلاً بهنام شفیعی" required />
+              <small class="field-error" data-error-for="fullName"></small>
+            </label>
+
+            <label class="field">
+              <span>شماره موبایل</span>
+              <input name="mobile" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" dir="ltr" placeholder="09123456789" required />
+              <small class="field-error" data-error-for="mobile"></small>
+            </label>
+
+            <label class="field">
+              <span>استان</span>
+              <select name="province" required>
+                <option value="">انتخاب استان</option>
+                <option>آذربایجان شرقی</option>
+                <option>آذربایجان غربی</option>
+                <option>اردبیل</option>
+                <option>اصفهان</option>
+                <option>البرز</option>
+                <option>ایلام</option>
+                <option>بوشهر</option>
+                <option>تهران</option>
+                <option>چهارمحال و بختیاری</option>
+                <option>خراسان جنوبی</option>
+                <option>خراسان رضوی</option>
+                <option>خراسان شمالی</option>
+                <option>خوزستان</option>
+                <option>زنجان</option>
+                <option>سمنان</option>
+                <option>سیستان و بلوچستان</option>
+                <option>فارس</option>
+                <option>قزوین</option>
+                <option>قم</option>
+                <option>کردستان</option>
+                <option>کرمان</option>
+                <option>کرمانشاه</option>
+                <option>کهگیلویه و بویراحمد</option>
+                <option>گلستان</option>
+                <option>گیلان</option>
+                <option>لرستان</option>
+                <option>مازندران</option>
+                <option>مرکزی</option>
+                <option>هرمزگان</option>
+                <option>همدان</option>
+                <option>یزد</option>
+              </select>
+              <small class="field-error" data-error-for="province"></small>
+            </label>
+
+            <label class="field">
+              <span>شهرستان</span>
+              <input name="city" type="text" maxlength="60" autocomplete="address-level2" placeholder="نام شهرستان" required />
+              <small class="field-error" data-error-for="city"></small>
+            </label>
+
+            <label class="field" data-gym-field hidden>
+              <span>نام باشگاه</span>
+              <input name="gymName" type="text" maxlength="100" autocomplete="organization" placeholder="نام باشگاه شما" />
+              <small class="field-error" data-error-for="gymName"></small>
+            </label>
+
+            <label class="field field-wide">
+              <span>توضیحات تکمیلی <small>(اختیاری)</small></span>
+              <textarea name="message" maxlength="500" rows="3" placeholder="نیاز یا پیشنهاد خود را کوتاه بنویسید"></textarea>
+              <small class="field-error" data-error-for="message"></small>
+            </label>
+          </div>
+
+          <label class="consent-field">
+            <input name="consent" type="checkbox" value="true" required />
+            <span>با ثبت این فرم، با تماس گُردیار برای پیگیری درخواست و نگهداری امن اطلاعاتم موافقم.</span>
+          </label>
+          <small class="field-error consent-error" data-error-for="consent"></small>
+
+          <div class="form-footer">
+            <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+            <button class="button button-primary submit-button" type="submit">
+              <span data-submit-label>ثبت پیش‌ثبت‌نام</span>
+              <span class="button-loader" data-submit-loader hidden></span>
+            </button>
+          </div>
+        </form>
+
+        <div class="registration-success" data-registration-success hidden>
+          <span class="success-mark">✓</span>
+          <p class="section-label">درخواست شما ثبت شد</p>
+          <h2>به جمع همراهان گُردیار خوش آمدید</h2>
+          <p>کد پیگیری خود را نگه دارید. برای ادامه مسیر با شما تماس می‌گیریم.</p>
+          <strong data-tracking-code></strong>
+          <button class="button button-secondary" type="button" data-close-preregister>بستن</button>
+        </div>
+      </div>
+    </dialog>
 
     <script src="app.js" defer></script>
   </body>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="theme-color" content="#0b1713" />
+    <title>مدیریت پیش‌ثبت‌نام‌ها | گُردیار</title>
+    <link rel="icon" href="../assets/gordyar-logo.png" />
+    <link rel="preload" href="../assets/vazirmatn.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-page">
+      <header class="admin-header">
+        <img src="../assets/gordyar-logo.png" alt="گُردیار" width="150" height="46" />
+        <div>
+          <p>پنل مدیریت</p>
+          <h1>پیش‌ثبت‌نام‌های گُردیار</h1>
+        </div>
+      </header>
+
+      <section class="admin-login" data-admin-login>
+        <div class="admin-login-card">
+          <span class="admin-lock">●</span>
+          <p class="section-label">دسترسی حفاظت‌شده</p>
+          <h2>ورود مدیر سایت</h2>
+          <p>رمز مدیریتی پیش‌ثبت‌نام‌ها را وارد کنید.</p>
+          <form data-admin-login-form>
+            <label class="field">
+              <span>رمز مدیریت</span>
+              <input name="token" type="password" autocomplete="current-password" required />
+            </label>
+            <p class="admin-message" data-admin-login-message role="alert"></p>
+            <button class="button button-primary" type="submit">ورود به فهرست</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="admin-content" data-admin-content hidden>
+        <div class="admin-toolbar">
+          <div>
+            <p class="section-label">درخواست‌های ثبت‌شده</p>
+            <h2>فهرست متقاضیان</h2>
+          </div>
+          <div class="admin-actions">
+            <button class="button button-secondary" type="button" data-export>دریافت فایل Excel</button>
+            <button class="admin-logout" type="button" data-logout>خروج</button>
+          </div>
+        </div>
+
+        <div class="admin-summary">
+          <div><strong data-total-count>۰</strong><span>درخواست نمایش‌داده‌شده</span></div>
+          <label>
+            <span class="sr-only">جست‌وجوی متقاضی</span>
+            <input type="search" data-search placeholder="جست‌وجوی نام، موبایل یا شهر..." />
+          </label>
+          <label>
+            <span class="sr-only">فیلتر نقش</span>
+            <select data-role-filter>
+              <option value="">همه نقش‌ها</option>
+              <option value="gym_owner">مدیر باشگاه</option>
+              <option value="athlete">ورزشکار</option>
+              <option value="coach">مربی</option>
+              <option value="nutritionist">مشاور تغذیه</option>
+              <option value="partner">همکار تجاری</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="admin-table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>متقاضی</th>
+                <th>نقش</th>
+                <th>موقعیت</th>
+                <th>باشگاه</th>
+                <th>کد پیگیری</th>
+                <th>تاریخ ثبت</th>
+              </tr>
+            </thead>
+            <tbody data-registration-rows></tbody>
+          </table>
+          <div class="admin-empty" data-admin-empty hidden>
+            <strong>درخواستی پیدا نشد</strong>
+            <span>پس از اولین پیش‌ثبت‌نام، اطلاعات در این بخش نمایش داده می‌شود.</span>
+          </div>
+          <div class="admin-loading" data-admin-loading>در حال دریافت اطلاعات...</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="admin.js" defer></script>
+  </body>
+</html>

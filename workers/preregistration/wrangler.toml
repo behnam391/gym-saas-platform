@@ -1,0 +1,14 @@
+name = "gordyar-preregistration-api"
+main = "src/index.js"
+compatibility_date = "2026-07-27"
+workers_dev = true
+
+routes = [
+  { pattern = "api.gordyar.ir", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gordyar-preregistration"
+database_id = "8d85c109-1ed0-4eff-86b8-8cb4ac40f3dc"
+migrations_dir = "migrations"
