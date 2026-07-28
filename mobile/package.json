@@ -1,0 +1,16 @@
+{
+  "name": "gordyar-mobile",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "athlete": "npm --workspace @gordyar/athlete run start",
+    "athlete:android": "npm --workspace @gordyar/athlete run android",
+    "athlete:ios": "npm --workspace @gordyar/athlete run ios",
+    "athlete:web": "npm --workspace @gordyar/athlete run web",
+    "typecheck": "npm --workspace @gordyar/mobile-core run typecheck && npm --workspace @gordyar/athlete run typecheck",
+    "lint": "npm --workspace @gordyar/athlete run lint"
+  }
+}
