@@ -1,6 +1,7 @@
 import type { GymSummary } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Brand } from '@/constants/theme';
@@ -12,7 +13,10 @@ export function GymCard({ gym }: { gym: GymSummary }) {
     : null;
 
   return (
-    <Pressable style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push({ pathname: '/gyms/[slug]', params: { slug: gym.slug } })}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {image ? (
         <Image source={{ uri: image }} contentFit="cover" style={styles.image} />
       ) : (
@@ -53,6 +57,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Brand.line,
   },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   image: { width: '100%', height: 150 },
   imageFallback: {
     width: '100%',

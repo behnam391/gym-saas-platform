@@ -7,6 +7,7 @@ import { AthletesService } from './athletes.service';
 import {
   CreateBodyMeasurementDto,
   CreateGoalDto,
+  RequestMembershipDto,
   SubmitInsuranceDto,
   SubmitParentalConsentDto,
   UpdateAthleteProfileDto,
@@ -59,6 +60,14 @@ export class AthletesController {
     return this.athletes.listMemberships(user.userId);
   }
 
+  @Post('me/memberships')
+  requestMembership(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: RequestMembershipDto,
+  ) {
+    return this.athletes.requestMembership(user.userId, dto);
+  }
+
   @Get('me/payments')
   listPayments(@CurrentUser() user: AuthenticatedUser) {
     return this.athletes.listPayments(user.userId);
@@ -84,4 +93,3 @@ export class AthletesController {
     return this.athletes.submitParentalConsent(user.userId, dto);
   }
 }
-

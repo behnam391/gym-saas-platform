@@ -1,7 +1,7 @@
 import type { AthleteRegistration } from '@gordyar/mobile-core';
 import { ApiError } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -26,7 +26,12 @@ const initialForm: AthleteRegistration = {
 };
 
 export default function RegisterScreen() {
-  const [form, setForm] = useState(initialForm);
+  const params = useLocalSearchParams<{ tenantId?: string; planId?: string }>();
+  const [form, setForm] = useState<AthleteRegistration>({
+    ...initialForm,
+    tenantId: params.tenantId,
+    membershipPlanId: params.planId,
+  });
   const [passwordRepeat, setPasswordRepeat] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -110,6 +115,14 @@ export default function RegisterScreen() {
           این اطلاعات برای عضویت باشگاه و خدمات ورزشی استفاده می‌شود و بدون اجازه تو در اختیار
           دیگران قرار نمی‌گیرد.
         </Text>
+        {params.planId ? (
+          <View style={styles.selectedPlan}>
+            <Ionicons name="checkmark-circle" size={18} color={Brand.emerald} />
+            <Text style={styles.selectedPlanText}>
+              طرح انتخابی باشگاه همراه ثبت‌نام درخواست می‌شود.
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.twoColumns}>
@@ -237,6 +250,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 350,
   },
+  selectedPlan: {
+    marginTop: 4,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#E9F4EC',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  selectedPlanText: { color: Brand.emerald, fontSize: 11, fontWeight: '800' },
   twoColumns: { flexDirection: 'row-reverse', gap: 10 },
   flexInput: { flex: 1, minWidth: 0 },
   genderGroup: { gap: 8 },

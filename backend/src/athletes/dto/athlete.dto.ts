@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   IsUrl,
   Max,
   Min,
@@ -67,3 +68,7 @@ export class SubmitParentalConsentDto {
   @IsUrl({ require_tld: false }, { message: 'آدرس فایل رضایت‌نامه معتبر نیست.' }) documentUrl: string;
 }
 
+export class RequestMembershipDto {
+  @IsUUID() tenantId: string;
+  @IsUUID() planId: string;
+}

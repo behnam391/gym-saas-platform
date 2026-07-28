@@ -45,6 +45,7 @@ export type RegistrationResult = {
 export type MembershipPlanSummary = {
   id: string;
   title: string;
+  description?: string | null;
   durationDays: number;
   price: number | string;
 };
@@ -60,7 +61,7 @@ export type AthleteMembership = {
     | 'CANCELLED';
   startDate?: string | null;
   endDate?: string | null;
-  plan: MembershipPlanSummary & { description?: string | null };
+  plan: MembershipPlanSummary;
   tenant: { name: string; slug: string };
 };
 
@@ -93,6 +94,35 @@ export type GymSummary = {
   membershipPlans: MembershipPlanSummary[];
   galleryImages: Array<{ id: string; url: string; type: string }>;
   distanceKm?: number | null;
+};
+
+export type GymProfessional = {
+  id: string;
+  name: string;
+  specialty: string;
+  bio?: string | null;
+  profileImageUrl?: string | null;
+};
+
+export type GymDetails = GymSummary & {
+  phone?: string | null;
+  email?: string | null;
+  workingHours?: Record<string, string> | null;
+  trainers: GymProfessional[];
+  nutritionists: GymProfessional[];
+  reviews: Array<{
+    id: string;
+    author: string;
+    rating: number;
+    comment?: string | null;
+    createdAt: string;
+  }>;
+};
+
+export type MembershipRequestResult = {
+  membership: AthleteMembership;
+  requiresReauthentication: boolean;
+  message: string;
 };
 
 export type SessionStore = {

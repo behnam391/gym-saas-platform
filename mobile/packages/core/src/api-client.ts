@@ -2,9 +2,11 @@ import type {
   AthleteMembership,
   AthleteProfileSummary,
   AthleteRegistration,
+  GymDetails,
   GymSummary,
   LoginRequest,
   RegistrationResult,
+  MembershipRequestResult,
   SessionStore,
   SessionTokens,
 } from './types';
@@ -56,6 +58,18 @@ export class GordyarApiClient {
     });
     const suffix = params.size ? `?${params.toString()}` : '';
     return this.request<GymSummary[]>(`/tenants${suffix}`);
+  }
+
+  getGym(slug: string) {
+    return this.request<GymDetails>(`/tenants/${encodeURIComponent(slug)}`);
+  }
+
+  requestMembership(tenantId: string, planId: string) {
+    return this.request<MembershipRequestResult>('/athletes/me/memberships', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify({ tenantId, planId }),
+    });
   }
 
   getMyProfile() {

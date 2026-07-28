@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="sign-in" options={{ title: 'ورود ورزشکار', presentation: 'modal' }} />
         <Stack.Screen name="register" options={{ title: 'ساخت حساب ورزشکار' }} />
+        <Stack.Screen name="gyms/[slug]" options={{ title: 'معرفی باشگاه' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>

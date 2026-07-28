@@ -1,8 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateBodyMeasurementDto,
   CreateGoalDto,
+  RequestMembershipDto,
   SubmitInsuranceDto,
   SubmitParentalConsentDto,
   UpdateAthleteProfileDto,
@@ -127,6 +133,68 @@ export class AthletesService {
         orderBy: { createdAt: 'desc' },
       }),
     );
+  }
+
+  /**
+   * Membership selection starts in the public, cross-tenant marketplace.
+   * The athlete may not have a tenant in their current JWT yet, so this
+   * narrowly-scoped transition validates both tenant and plan through the
+   * platform client, then sets the selected gym as the athlete's active
+   * tenant. The mobile app signs in again after this operation so future
+   * tenant-scoped reads use a fresh trusted tenant claim.
+   */
+  async requestMembership(userId: string, dto: RequestMembershipDto) {
+    const db = this.prisma.forPlatform();
+    const [user, tenant, plan, activeMembership] = await Promise.all([
+      db.user.findFirst({ where: { id: userId, role: 'ATHLETE', isActive: true } }),
+      db.tenant.findFirst({
+        where: { id: dto.tenantId, isActive: true, isVerified: true },
+        select: { id: true, name: true },
+      }),
+      db.membershipPlan.findFirst({
+        where: { id: dto.planId, tenantId: dto.tenantId, isActive: true },
+      }),
+      db.membership.findFirst({
+        where: {
+          userId,
+          status: { in: ['PENDING_INSURANCE', 'PENDING_PAYMENT', 'ACTIVE'] },
+        },
+        include: { tenant: { select: { name: true } } },
+      }),
+    ]);
+
+    if (!user) throw new NotFoundException('حساب ورزشکار یافت نشد.');
+    if (!tenant) throw new BadRequestException('باشگاه انتخاب‌شده فعال یا تاییدشده نیست.');
+    if (!plan) throw new BadRequestException('طرح عضویت انتخاب‌شده معتبر نیست.');
+    if (activeMembership) {
+      throw new ConflictException(
+        `ابتدا وضعیت عضویت فعلی در ${activeMembership.tenant.name} را مشخص کنید.`,
+      );
+    }
+
+    return db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { tenantId: tenant.id },
+      });
+      const membership = await tx.membership.create({
+        data: {
+          tenantId: tenant.id,
+          userId,
+          planId: plan.id,
+          status: 'PENDING_INSURANCE',
+        },
+        include: {
+          plan: true,
+          tenant: { select: { name: true, slug: true } },
+        },
+      });
+      return {
+        membership,
+        requiresReauthentication: true,
+        message: 'درخواست عضویت ثبت شد. برای فعال‌سازی، بیمه ورزشی را تکمیل کنید.',
+      };
+    });
   }
 
   listPayments(userId: string) {
