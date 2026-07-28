@@ -19,5 +19,12 @@ npm run athlete
 `EXPO_PUBLIC_API_BASE_URL` را می‌توان با کپی‌کردن `.env.example` به `.env`
 تغییر داد.
 
+اگر بررسی آنلاین Expo به‌دلیل محدودیت شبکه متوقف شد، از دستور زیر استفاده
+کنید:
+
+```bash
+npm run athlete:offline
+```
+
 قابلیت‌هایی مانند NFC و اعلان‌های Production در Development Build فعال
 خواهند شد و جزو نسخه Expo Go نیستند.

@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "athlete": "npm --workspace @gordyar/athlete run start",
+    "athlete:offline": "npm --workspace @gordyar/athlete run start:offline",
     "athlete:android": "npm --workspace @gordyar/athlete run android",
     "athlete:ios": "npm --workspace @gordyar/athlete run ios",
     "athlete:web": "npm --workspace @gordyar/athlete run web",

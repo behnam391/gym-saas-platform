@@ -24,3 +24,6 @@ npm run athlete
 
 سپس QR نمایش‌داده‌شده را با Expo Go اسکن کنید. برای قابلیت‌های بومی مانند
 NFC باید Development Build ساخته شود.
+
+در صورت قطع بودن بررسی آنلاین Expo، از `npm run athlete:offline` استفاده
+کنید.
