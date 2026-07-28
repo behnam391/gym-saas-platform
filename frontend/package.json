@@ -1,5 +1,5 @@
 {
-  "name": "gym-saas-frontend",
+  "name": "gordyar-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "@fontsource-variable/vazirmatn": "^5.2.6",
     "clsx": "^2.1.1",
     "lucide-react": "^0.452.0",
-    "next": "^15.0.0",
+    "next": "15.5.22",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -26,6 +26,7 @@
     "typescript": "^5.6.0"
   },
   "overrides": {
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "sharp": "0.35.0"
   }
 }

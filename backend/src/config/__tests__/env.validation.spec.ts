@@ -4,6 +4,7 @@ const validEnv = {
   DATABASE_URL: 'postgresql://gym_app:password@localhost:5432/gym_saas',
   DATABASE_ADMIN_URL: 'postgresql://gym_admin:password@localhost:5432/gym_saas',
   JWT_ACCESS_SECRET: 'a-secure-random-secret-with-more-than-32-characters',
+  JWT_REFRESH_SECRET: 'another-secure-random-secret-with-more-than-32-characters',
 };
 
 describe('validateEnv', () => {
@@ -21,5 +22,14 @@ describe('validateEnv', () => {
     expect(() =>
       validateEnv({ ...validEnv, JWT_ACCESS_SECRET: 'too-short' }),
     ).toThrow('حداقل ۳۲ کاراکتر');
+  });
+
+  it('rejects reusing the same JWT secret', () => {
+    expect(() =>
+      validateEnv({
+        ...validEnv,
+        JWT_REFRESH_SECRET: validEnv.JWT_ACCESS_SECRET,
+      }),
+    ).toThrow('باید متفاوت باشند');
   });
 });

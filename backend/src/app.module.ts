@@ -30,6 +30,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { TenantStaffModule } from './tenant-staff/tenant-staff.module';
 import { PlatformProfessionalsModule } from './platform-professionals/platform-professionals.module';
 import { SiteContentModule } from './site-content/site-content.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { SiteContentModule } from './site-content/site-content.module';
     PlatformProfessionalsModule,
     SiteContentModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

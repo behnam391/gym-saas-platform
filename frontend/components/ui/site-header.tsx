@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Building2, Dumbbell, UsersRound } from 'lucide-react';
+import { Building2, UsersRound } from 'lucide-react';
+import { BrandLogo } from './brand-logo';
 import { buttonStyles } from './button';
 import { ThemeToggle } from './theme-toggle';
 
@@ -7,14 +8,12 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/10 bg-base/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-accent text-base shadow-lg shadow-accent/10">
-            <Dumbbell className="size-5" />
-          </span>
-          <span>
-            <span className="block text-sm font-extrabold sm:text-base">باشگاه‌یار</span>
-            <span className="hidden text-[11px] text-muted sm:block">انتخاب، عضویت و مدیریت هوشمند</span>
-          </span>
+        <Link href="/" aria-label="صفحه اصلی گُردیار">
+          <BrandLogo
+            size="sm"
+            subtitle="انتخاب، عضویت و مدیریت هوشمند"
+            className="[&>span:last-child>span:last-child]:hidden sm:[&>span:last-child>span:last-child]:block"
+          />
         </Link>
 
         <nav className="flex items-center gap-2">

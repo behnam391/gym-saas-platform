@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">گُردیار، یار قهرمانان</title>
+  <desc id="desc">سامانه هوشمند ورزش ایران</desc>
+  <defs>
+    <linearGradient id="background" x1="1100" y1="40" x2="80" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1B2B26"/>
+      <stop offset=".52" stop-color="#14211D"/>
+      <stop offset="1" stop-color="#0E1815"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(936 108) rotate(132) scale(470 430)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C9A227" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#C9A227" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="806" y1="153" x2="1010" y2="393" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E4C766"/>
+      <stop offset="1" stop-color="#C9A227"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#000" flood-opacity=".4"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <path d="M0 510C238 436 399 548 608 506c210-42 350-187 592-196v320H0Z" fill="#4CAF6D" fill-opacity=".035"/>
+  <path d="M0 551c253-75 424 29 632-9 208-38 354-167 568-178" fill="none" stroke="#C9A227" stroke-opacity=".13" stroke-width="2"/>
+
+  <g transform="translate(822 134)" filter="url(#shadow)">
+    <rect width="240" height="240" rx="68" fill="#E4C766" fill-opacity=".07"/>
+    <rect x="2" y="2" width="236" height="236" rx="66" fill="none" stroke="url(#gold)" stroke-opacity=".78" stroke-width="4"/>
+    <path d="M48 73h144v31H101c-21 0-34 11-34 29 0 19 14 31 34 31h54v-25h37v56h-91c-45 0-73-25-73-62s28-60 73-60Z" fill="url(#gold)"/>
+    <path d="M138 33h23v27h-23zm36 8h23v22h-23z" fill="#E4C766"/>
+    <path d="M78 211h84" stroke="#4CAF6D" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <g font-family="Vazirmatn, Tahoma, Arial, sans-serif" direction="rtl">
+    <text x="750" y="230" text-anchor="start" font-size="108" font-weight="900" fill="#F3F1E7">گُردیار</text>
+    <text x="750" y="310" text-anchor="start" font-size="39" font-weight="700" fill="#E4C766">یار قهرمانان</text>
+    <text x="750" y="382" text-anchor="start" font-size="29" font-weight="500" fill="#9FAFA8">سامانه هوشمند ورزش ایران</text>
+  </g>
+  <text x="749" y="448" text-anchor="end" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="7" fill="#C9A227">GORDYAR</text>
+  <rect x="120" y="500" width="960" height="1" fill="#F3F1E7" fill-opacity=".08"/>
+  <text x="1080" y="554" direction="rtl" text-anchor="start" font-family="Vazirmatn, Tahoma, Arial, sans-serif" font-size="23" font-weight="500" fill="#9FAFA8">انتخاب باشگاه · عضویت · مربی‌گری · مدیریت یکپارچه</text>
+</svg>

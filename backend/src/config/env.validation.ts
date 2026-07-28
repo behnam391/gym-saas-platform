@@ -2,6 +2,7 @@ const REQUIRED_ENV = [
   'DATABASE_URL',
   'DATABASE_ADMIN_URL',
   'JWT_ACCESS_SECRET',
+  'JWT_REFRESH_SECRET',
 ] as const;
 
 export function validateEnv(config: Record<string, unknown>) {
@@ -16,9 +17,20 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
-  const jwtSecret = String(config.JWT_ACCESS_SECRET);
-  if (jwtSecret.length < 32) {
-    throw new Error('JWT_ACCESS_SECRET باید حداقل ۳۲ کاراکتر باشد.');
+  const accessSecret = String(config.JWT_ACCESS_SECRET);
+  const refreshSecret = String(config.JWT_REFRESH_SECRET);
+  if (accessSecret.length < 32 || refreshSecret.length < 32) {
+    throw new Error('کلیدهای JWT باید حداقل ۳۲ کاراکتر باشند.');
+  }
+  if (accessSecret === refreshSecret) {
+    throw new Error('کلیدهای دسترسی و تمدید JWT باید متفاوت باشند.');
+  }
+
+  if (config.NODE_ENV === 'production') {
+    const corsOrigin = String(config.CORS_ORIGIN ?? '');
+    if (!corsOrigin.startsWith('https://')) {
+      throw new Error('CORS_ORIGIN در محیط اصلی باید با https:// شروع شود.');
+    }
   }
 
   return config;

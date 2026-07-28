@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Dumbbell, ShieldCheck } from 'lucide-react';
+import { BrandLogo } from './brand-logo';
 import { MembershipCard } from './membership-card';
 import { Input } from './input';
 import { Button } from './button';
@@ -63,6 +64,7 @@ function Form() {
     <main className="relative min-h-screen overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(76,175,109,.14),transparent_34%),radial-gradient(circle_at_10%_90%,rgba(228,199,102,.12),transparent_30%)]" />
       <div className="relative mx-auto max-w-2xl">
+        <Link href="/" className="mb-7 flex w-fit" aria-label="صفحه اصلی گُردیار"><BrandLogo size="sm" /></Link>
         <Link href="/auth/register" className="mb-4 inline-flex items-center gap-2 text-sm text-muted hover:text-ink"><ArrowRight className="size-4" /> انتخاب نوع ثبت‌نام</Link>
         <MembershipCard className="overflow-hidden p-0">
           <header className="border-b border-border/10 bg-surface-raised p-6 sm:p-8">

@@ -5,6 +5,7 @@ import {
   Dumbbell,
   ShieldCheck,
 } from 'lucide-react';
+import { BrandLogo } from '../../../components/ui/brand-logo';
 import { MembershipCard } from '../../../components/ui/membership-card';
 
 const OPTIONS = [
@@ -29,9 +30,7 @@ export default function RegisterPage() {
     <main className="relative min-h-screen overflow-hidden px-4 py-10 sm:py-16">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(228,199,102,.16),transparent_35%),radial-gradient(circle_at_10%_100%,rgba(76,175,109,.12),transparent_30%)]" />
       <div className="relative mx-auto max-w-5xl">
-        <Link href="/" className="mb-10 inline-flex items-center gap-2 font-extrabold text-accent-soft">
-          <Dumbbell className="size-5" /> باشگاه‌یار
-        </Link>
+        <Link href="/" className="mb-10 inline-flex" aria-label="صفحه اصلی گُردیار"><BrandLogo /></Link>
         <div className="max-w-2xl">
           <p className="flex items-center gap-2 text-sm font-bold text-success"><ShieldCheck className="size-4" /> ثبت‌نام تفکیک‌شده و کنترل‌شده</p>
           <h1 className="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl">نوع حسابی که نیاز دارید را انتخاب کنید</h1>

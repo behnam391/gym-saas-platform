@@ -22,7 +22,7 @@ const FALLBACK: HeroSlide = {
   title: 'قهرمان خودت باش',
   subtitle: 'باشگاه مناسب، مربی حرفه‌ای و مسیر پیشرفتت را یک‌جا پیدا کن.',
   imageUrl: '/images/hero/hero-bodybuilder-v1.webp',
-  imageCredit: 'تصویر اختصاصی باشگاه‌یار',
+  imageCredit: 'تصویر اختصاصی گُردیار',
   ctaLabel: 'شروع به‌عنوان ورزشکار',
   ctaUrl: '/access/athlete',
 };

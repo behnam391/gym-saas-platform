@@ -1,198 +1,111 @@
-# راهنمای کامل دیپلوی — گام به گام
+# راهنمای انتشار گُردیار روی VPS
 
-## پیش‌نیازها (روی سرور یا لوکال)
+این راهنما برای اولین انتشار `gordyar.ir` روی یک VPS تازه با Ubuntu 24.04 نوشته شده است.
 
-- Docker + Docker Compose v2
-- Git
-- یک دامنه (برای production) یا فقط localhost برای تست لوکال
+## مشخصات پیشنهادی سرور
 
----
+- ۴ هسته پردازنده
+- ۸ گیگابایت RAM
+- حداقل ۸۰ گیگابایت SSD یا NVMe
+- یک IPv4 ثابت
+- امکان Snapshot از سمت شرکت ارائه‌دهنده
 
-## مرحله ۱ — دریافت کد
+هاست اشتراکی برای معماری گُردیار مناسب نیست. PostgreSQL، Redis، API، Worker و رابط کاربری همگی روی Docker اجرا می‌شوند.
 
-```bash
-# اگر روی GitHub گذاشتید:
-git clone https://github.com/your-org/gym-saas-platform.git
-cd gym-saas-platform
+## ۱. رکوردهای DNS
 
-# یا از آرشیوی که دانلود کردید:
-tar xzf gym-saas-platform.tar.gz
-cd gym-saas-platform
-```
+بعد از دریافت IP سرور، این سه رکورد را در پنل DNS دامنه بسازید:
 
----
+| نوع | نام | مقدار |
+|---|---|---|
+| A | `@` | IP سرور |
+| A | `www` | IP سرور |
+| A | `api` | IP سرور |
 
-## مرحله ۲ — تنظیم متغیرهای محیطی
+TTL را برای شروع روی ۳۰۰ ثانیه بگذارید. اگر IPv6 روی سرور تنظیم نشده، رکورد AAAA نسازید.
 
-```bash
-cd deploy
-cp .env.example .env
-```
+## ۲. آماده‌سازی سرور
 
-فایل `.env` را باز کنید و این مقادیر را پر کنید:
+با کاربر دارای دسترسی مدیریتی وارد سرور شوید و Docker، Docker Compose و Git را نصب کنید. سپس فقط پورت‌های زیر را در فایروال باز بگذارید:
 
-```env
-# پسوردهای دیتابیس — هر چیزی قوی بگذارید
-POSTGRES_PASSWORD=MyStr0ngPass!
-POSTGRES_ADMIN_PASSWORD=AdminStr0ng!
+- `22/tcp` برای مدیریت سرور
+- `80/tcp` برای دریافت و تمدید HTTPS
+- `443/tcp` و `443/udp` برای سایت
 
-# پسورد Redis
-REDIS_PASSWORD=RedisPass123!
+پورت‌های PostgreSQL و Redis نباید در فایروال عمومی باز شوند و در تنظیمات گُردیار نیز منتشر نشده‌اند.
 
-# کلیدهای JWT — حتماً random و طولانی باشند
-JWT_ACCESS_SECRET=some-very-long-random-secret-string-here
-JWT_REFRESH_SECRET=another-very-long-random-secret-string-here
-
-# کلید Anthropic برای هوش مصنوعی
-ANTHROPIC_API_KEY=sk-ant-...
-
-# آدرس‌های عمومی (برای تست لوکال همین باشد)
-PUBLIC_FRONTEND_URL=http://localhost
-PUBLIC_API_URL=http://localhost
-```
-
----
-
-## مرحله ۳ — دیپلوی اولیه (یک‌بار)
+## ۳. دریافت و تنظیم پروژه
 
 ```bash
-# مجوز اجرا بدهید
-chmod +x deploy.sh
+git clone https://github.com/behnam391/gym-saas-platform.git
+cd gym-saas-platform/deploy
+chmod +x init-env.sh deploy.sh restore-db.sh
+./init-env.sh
+```
 
-# اجرا کنید
+اسکریپت `init-env.sh` رمزهای تصادفی و مستقل می‌سازد و فایل خصوصی `.env` را با دسترسی محدود ذخیره می‌کند. محتوای این فایل را در GitHub، پیام‌رسان یا گفتگو ارسال نکنید.
+
+## ۴. انتشار
+
+مطمئن شوید رکوردهای DNS به IP سرور اشاره می‌کنند، سپس اجرا کنید:
+
+```bash
 ./deploy.sh
 ```
 
-این اسکریپت به‌ترتیب:
-1. صبر می‌کند Postgres سالم بیاید بالا
-2. نقش‌های `gym_app` و `gym_admin` را در Postgres می‌سازد
-3. تمام جداول را با `prisma migrate deploy` می‌سازد
-4. سیاست‌های Row-Level Security را اعمال می‌کند
-5. همه سرویس‌ها را build و بالا می‌آورد
+این فرایند:
 
-**خروجی موفق:**
-```
-==> Waiting for Postgres to be healthy... ✓
-==> Bootstrapping gym_app / gym_admin roles... ✓
-==> Running Prisma migrations... ✓
-==> Applying Row-Level Security policies... ✓
-==> Building and starting all services... ✓
-==> Done. Check health with: docker compose ps
-```
+1. PostgreSQL و Redis خصوصی را اجرا می‌کند.
+2. نقش محدود برنامه و نقش مدیریتی دیتابیس را جدا می‌سازد.
+3. تصاویر Production را Build می‌کند.
+4. Migrationها و سیاست‌های جداسازی اطلاعات باشگاه‌ها را اعمال می‌کند.
+5. رابط کاربری، API، Worker، بکاپ و Caddy را اجرا می‌کند.
+6. برای دامنه‌ها HTTPS رایگان دریافت و به‌صورت خودکار تمدید می‌کند.
 
----
+پس از پایان، این آدرس‌ها باید پاسخ دهند:
 
-## مرحله ۴ — بررسی وضعیت سرویس‌ها
+- `https://gordyar.ir`
+- `https://www.gordyar.ir` که به دامنه اصلی منتقل می‌شود
+- `https://api.gordyar.ir/api/v1/health`
+
+## ۵. بررسی وضعیت
 
 ```bash
 docker compose ps
+docker compose logs --tail=100 backend frontend caddy
 ```
 
-باید چیزی شبیه این ببینید:
+تنها Caddy باید پورت عمومی داشته باشد. وضعیت PostgreSQL، Redis، Backend و Frontend باید `healthy` باشد.
 
-```
-NAME         STATUS          PORTS
-postgres     healthy         5432/tcp
-redis        healthy         6379/tcp
-backend      healthy         3000/tcp
-frontend     running         3001/tcp
-worker       running
-nginx        running         0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
-```
+## ۶. بکاپ
 
----
-
-## مرحله ۵ — تست سریع API
+کانتینر Backup هر ۲۴ ساعت از دیتابیس و فایل‌های آپلودی نسخه پشتیبان می‌گیرد و نسخه‌های هفت روز اخیر را نگه می‌دارد:
 
 ```bash
-# باید لیست باشگاه‌ها (خالی) برگردد
-curl http://localhost/api/v1/tenants
-
-# خروجی موفق:
-# []
-
-# ثبت‌نام یک کاربر تست
-curl -X POST http://localhost/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "علی",
-    "lastName": "تست",
-    "nationalId": "0012345678",
-    "mobile": "09120000001",
-    "password": "Test1234!",
-    "gender": "MALE",
-    "dateOfBirth": "1990-06-15"
-  }'
-
-# خروجی موفق:
-# {"userId":"...","isMinor":false,"message":"ثبت‌نام با موفقیت انجام شد."}
-
-# لاگین
-curl -X POST http://localhost/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"identifier":"09120000001","password":"Test1234!"}'
-
-# خروجی موفق:
-# {"accessToken":"eyJ...","refreshToken":"...","role":"ATHLETE","tenantId":null}
+docker compose exec backup ls -lh /backups
 ```
 
----
+این نسخه‌ها روی همان VPS هستند و در صورت خرابی کامل دیسک کافی نیستند. قبل از ورود کاربران واقعی باید یک کپی رمزگذاری‌شده خارج از سرور، مانند فضای ذخیره‌سازی ابری یا Backup Space، نیز تنظیم شود.
 
-## مرحله ۶ — دیدن فرانت‌اند
-
-مرورگر را باز کنید:
-
-```
-http://localhost          → صفحه اصلی مارکت‌پلیس
-http://localhost/auth/login     → صفحه ورود
-http://localhost/auth/register  → صفحه ثبت‌نام
-```
-
----
-
-## مرحله ۷ — لاگ‌ها و دیباگ
+بازیابی دیتابیس عمداً نیازمند تأیید صریح است:
 
 ```bash
-# لاگ همه سرویس‌ها
-docker compose logs -f
-
-# لاگ فقط بک‌اند
-docker compose logs -f backend
-
-# لاگ worker (صف پیامک)
-docker compose logs -f worker
-
-# ورود به shell دیتابیس
-docker compose exec postgres psql -U gym_app -d gym_saas
-
-# بررسی جداول
-\dt
-
-# بررسی سیاست‌های RLS
-SELECT tablename, policyname FROM pg_policies;
+CONFIRM_RESTORE=YES ./restore-db.sh gordyar-db-YYYYMMDDTHHMMSSZ.dump
 ```
 
----
-
-## دیپلوی‌های بعدی (بعد از تغییر کد)
+## ۷. به‌روزرسانی‌های بعدی
 
 ```bash
+git pull --ff-only
 cd deploy
-
-# build مجدد و restart (بدون از دست دادن داده)
-docker compose up -d --build
-
-# اگر migration جدید اضافه شد:
-docker compose run --rm backend npx prisma migrate deploy
+./deploy.sh
 ```
 
----
+داده‌ها و فایل‌ها داخل Volumeهای پایدار Docker نگهداری می‌شوند و Build مجدد آن‌ها را حذف نمی‌کند.
 
-## عیب‌یابی رایج
+## نکات نسخه اول
 
-| مشکل | راه‌حل |
-|---|---|
-| `backend` بالا نمی‌آید | `docker compose logs backend` — احتمالاً DATABASE_URL اشتباه است |
-| صفحه فرانت خطای API می‌دهد | مطمئن شوید `PUBLIC_API_URL` در `.env` درست است |
-| `worker` crash می‌کند | نگران نباشید — بدون `SMS_PROVIDER_API_KEY` فقط لاگ می‌کند و ادامه می‌دهد |
-| پورت ۸۰ در دسترس نیست | در `docker-compose.yml` پورت Nginx را به `8080:80` تغییر دهید |
+- آپلودها در نسخه اول روی Volume سرور ذخیره می‌شوند؛ پیش از اجرای چند سرور باید به S3 منتقل شوند.
+- سرویس هوش مصنوعی بدون کلید API غیرفعال می‌ماند و مانع اجرای بخش‌های اصلی نمی‌شود.
+- مستندات Swagger در محیط Production منتشر نمی‌شود.
+- حساب Super Admin باید با فرایند راه‌اندازی امن ساخته شود؛ حساب‌های آزمایشی لوکال نباید به نسخه اصلی منتقل شوند.

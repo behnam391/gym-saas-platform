@@ -1,5 +1,5 @@
 // ============================================================================
-// سامانه هوشمند مدیریت باشگاه‌های ورزشی — Database Schema
+// گُردیار — سامانه هوشمند ورزش ایران — Database Schema
 // Multi-tenant strategy: SHARED DATABASE, shared schema, tenant_id discriminator
 // on every tenant-scoped table. Enforced at the application layer via a
 // Prisma middleware / NestJS request-scoped tenant context (see backend skeleton)

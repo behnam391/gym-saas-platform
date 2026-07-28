@@ -7,6 +7,7 @@ import { ArrowRight, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 import { dashboardForRole } from '../../lib/auth';
 import { LOGIN_PORTALS, LoginPortalKey } from '../../lib/login-portals';
+import { BrandLogo } from './brand-logo';
 import { MembershipCard } from './membership-card';
 import { Input } from './input';
 import { Button } from './button';
@@ -68,7 +69,8 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(228,199,102,.16),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(76,175,109,.12),transparent_30%)]" />
       <div className="relative w-full max-w-md">
-        <Link href={backHref} className="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink">
+        <Link href="/" className="mb-7 inline-flex" aria-label="صفحه اصلی گُردیار"><BrandLogo size="sm" /></Link>
+        <Link href={backHref} className="mb-4 flex w-fit items-center gap-2 text-sm text-muted transition hover:text-ink">
           <ArrowRight className="size-4" /> بازگشت
         </Link>
         <MembershipCard className="overflow-hidden p-0">

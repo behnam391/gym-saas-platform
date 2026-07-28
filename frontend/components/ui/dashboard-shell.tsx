@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Dumbbell, Home, LucideIcon } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
+import { BrandLogo } from './brand-logo';
 import { LogoutButton } from './logout-button';
 import { ThemeToggle } from './theme-toggle';
 
@@ -21,12 +22,8 @@ export function DashboardShell({
   return (
     <div className="flex min-h-screen">
       <aside className="hidden max-h-screen w-64 flex-col overflow-y-auto border-l border-border/10 bg-surface px-4 py-8 lg:sticky lg:top-0 lg:flex">
-        <Link href="/" className="mb-8 flex items-center gap-3 px-2">
-          <span className="grid size-9 place-items-center rounded-xl bg-accent text-base"><Dumbbell className="size-4" /></span>
-          <span>
-            <span className="block text-sm font-extrabold text-ink">باشگاه‌یار</span>
-            <span className="text-xs text-muted">{title}</span>
-          </span>
+        <Link href="/" className="mb-8 px-2" aria-label="صفحه اصلی گُردیار">
+          <BrandLogo size="sm" subtitle={title} />
         </Link>
         <nav className="flex flex-col gap-1">
           {nav.map(({ href, label, icon: Icon }) => (
@@ -48,8 +45,8 @@ export function DashboardShell({
       <div className="min-w-0 flex-1">
         <div className="border-b border-border/10 bg-surface lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <Link href="/" className="flex items-center gap-2 font-extrabold text-accent-soft">
-              <Home className="size-4" /> باشگاه‌یار
+            <Link href="/" aria-label="صفحه اصلی گُردیار">
+              <BrandLogo size="sm" showSubtitle={false} />
             </Link>
             <div className="flex items-center gap-2"><ThemeToggle /><LogoutButton compact /></div>
           </div>
