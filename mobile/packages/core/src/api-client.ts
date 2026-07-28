@@ -1,4 +1,5 @@
 import type {
+  AttendancePass,
   AthleteMembership,
   AthleteProfileSummary,
   AthleteRegistration,
@@ -70,6 +71,10 @@ export class GordyarApiClient {
       authenticated: true,
       body: JSON.stringify({ tenantId, planId }),
     });
+  }
+
+  getAttendancePass() {
+    return this.request<AttendancePass>('/attendance/pass', { authenticated: true });
   }
 
   getMyProfile() {

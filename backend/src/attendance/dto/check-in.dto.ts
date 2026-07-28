@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
 enum AttendanceMethodDto {
   QR_CODE = 'QR_CODE',
@@ -16,4 +16,10 @@ export class CheckInDto {
   @IsOptional()
   @IsString()
   membershipId?: string;
+}
+
+export class RedeemAttendancePassDto {
+  @IsString()
+  @MinLength(32)
+  token: string;
 }

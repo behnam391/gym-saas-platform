@@ -125,6 +125,15 @@ export type MembershipRequestResult = {
   message: string;
 };
 
+export type AttendancePass = {
+  token: string;
+  expiresAt: string;
+  expiresInSeconds: number;
+  athleteName: string;
+  gym: { id: string; name: string; slug: string };
+  planTitle: string;
+};
+
 export type SessionStore = {
   load(): Promise<SessionTokens | null>;
   save(tokens: SessionTokens): Promise<void>;
