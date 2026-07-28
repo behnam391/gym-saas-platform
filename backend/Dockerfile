@@ -2,7 +2,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
+# redis-memory-server is only used by local/integration tests. Its install
+# hook compiles a temporary Redis binary, which is unnecessary in production.
+ENV REDISMS_DISABLE_POSTINSTALL=true
 RUN npm ci
 
 COPY prisma ./prisma
@@ -15,9 +20,12 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV REDISMS_DISABLE_POSTINSTALL=true
 
 # Non-root user — never run the API as root in the container.
-RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+RUN apk add --no-cache openssl \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nestjs -u 1001
 
 COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev

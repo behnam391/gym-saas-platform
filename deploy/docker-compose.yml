@@ -110,6 +110,8 @@ services:
       SMS_PROVIDER_API_KEY: ${SMS_PROVIDER_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       NODE_ENV: production
+    healthcheck:
+      disable: true
     security_opt:
       - no-new-privileges:true
     mem_limit: 512m
@@ -130,6 +132,7 @@ services:
       backend: { condition: service_healthy }
     environment:
       API_BASE_URL: http://backend:3000/api/v1
+      HOSTNAME: 0.0.0.0
       DEMO_MODE: 'false'
       NEXT_PUBLIC_DEMO_MODE: 'false'
       NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS: 'false'
