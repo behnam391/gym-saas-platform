@@ -94,20 +94,43 @@ function clearSessionCookies(response: NextResponse) {
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+function firstForwardedValue(value: string | null) {
+  return value?.split(',')[0]?.trim() || null;
+}
+
+function isSameOriginRequest(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+
+  try {
+    const originUrl = new URL(origin);
+    // Next.js sees the container's internal URL behind Caddy. Caddy provides
+    // the original public host/protocol through the standard forwarded
+    // headers, so CSRF validation must compare against those values.
+    const effectiveHost =
+      firstForwardedValue(request.headers.get('x-forwarded-host')) ??
+      request.headers.get('host') ??
+      request.nextUrl.host;
+    const effectiveProtocol =
+      firstForwardedValue(request.headers.get('x-forwarded-proto')) ??
+      request.nextUrl.protocol.replace(':', '');
+
+    return (
+      originUrl.host.toLowerCase() === effectiveHost.toLowerCase() &&
+      originUrl.protocol === `${effectiveProtocol.toLowerCase()}:`
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function handler(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const pathname = `/${path.join('/')}`;
   const endpoint = `${pathname}${request.nextUrl.search}`;
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-    const origin = request.headers.get('origin');
-    let sameOrigin = !origin;
-    try {
-      sameOrigin = !origin || new URL(origin).host === request.nextUrl.host;
-    } catch {
-      sameOrigin = false;
-    }
-    if (!sameOrigin) {
+    if (!isSameOriginRequest(request)) {
       return NextResponse.json(
         { message: 'درخواست از مبدا نامعتبر رد شد.' },
         { status: 403 },
