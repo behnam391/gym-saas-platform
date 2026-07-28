@@ -1,4 +1,6 @@
 import type {
+  AthleteMembership,
+  AthleteProfileSummary,
   AthleteRegistration,
   GymSummary,
   LoginRequest,
@@ -56,12 +58,12 @@ export class GordyarApiClient {
     return this.request<GymSummary[]>(`/tenants${suffix}`);
   }
 
-  getMyProfile<T = unknown>() {
-    return this.request<T>('/athletes/me/profile', { authenticated: true });
+  getMyProfile() {
+    return this.request<AthleteProfileSummary>('/athletes/me/profile', { authenticated: true });
   }
 
-  getMyMemberships<T = unknown>() {
-    return this.request<T>('/athletes/me/memberships', { authenticated: true });
+  getMyMemberships() {
+    return this.request<AthleteMembership[]>('/athletes/me/memberships', { authenticated: true });
   }
 
   async logout() {

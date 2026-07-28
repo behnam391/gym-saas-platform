@@ -46,7 +46,34 @@ export type MembershipPlanSummary = {
   id: string;
   title: string;
   durationDays: number;
-  price: number;
+  price: number | string;
+};
+
+export type AthleteMembership = {
+  id: string;
+  status:
+    | 'PENDING_INSURANCE'
+    | 'PENDING_PAYMENT'
+    | 'ACTIVE'
+    | 'EXPIRED'
+    | 'SUSPENDED'
+    | 'CANCELLED';
+  startDate?: string | null;
+  endDate?: string | null;
+  plan: MembershipPlanSummary & { description?: string | null };
+  tenant: { name: string; slug: string };
+};
+
+export type AthleteProfileSummary = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
+  email?: string | null;
+  city?: string | null;
+  isMinor: boolean;
+  isRestricted: boolean;
+  memberships: AthleteMembership[];
 };
 
 export type GymSummary = {
