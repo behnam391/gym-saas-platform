@@ -84,14 +84,14 @@ export class PaymentsService {
     if (prepared.existingAuthority) {
       return {
         paymentId: prepared.paymentId,
-        redirectUrl: this.zarinpal.getRedirectUrl(prepared.existingAuthority),
+        redirectUrl: await this.zarinpal.getRedirectUrl(prepared.existingAuthority),
       };
     }
 
     try {
       const request = await this.zarinpal.requestPayment({
         amountToman: prepared.amountToman,
-        callbackUrl: this.zarinpalCallbackUrl(),
+        callbackUrl: await this.zarinpal.getCallbackUrl(),
         description: prepared.description,
         mobile: prepared.mobile,
       });
@@ -195,14 +195,6 @@ export class PaymentsService {
         redirectUrl: `${webOrigin}/payment/result?status=failed&payment=${payment.id}`,
       };
     }
-  }
-
-  private zarinpalCallbackUrl() {
-    const explicit = process.env.ZARINPAL_CALLBACK_URL?.trim();
-    if (explicit) return explicit;
-    const apiOrigin = process.env.PUBLIC_API_ORIGIN?.replace(/\/$/, '');
-    if (!apiOrigin) throw new BadRequestException('آدرس بازگشت درگاه تنظیم نشده است.');
-    return `${apiOrigin}/api/v1/payments/zarinpal/callback`;
   }
 
   private webOrigin() {

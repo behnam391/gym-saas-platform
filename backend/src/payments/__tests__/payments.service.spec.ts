@@ -14,6 +14,9 @@ function createService(
   const zarinpal = {
     requestPayment: jest.fn(),
     getRedirectUrl: jest.fn(),
+    getCallbackUrl: jest
+      .fn()
+      .mockResolvedValue('https://api.example.test/api/v1/payments/zarinpal/callback'),
     verifyPayment: jest.fn(),
     ...zarinpalOverrides,
   } as unknown as ZarinpalService;
@@ -67,8 +70,6 @@ describe('PaymentsService.recordManualPayment', () => {
 
 describe('PaymentsService.startZarinpalPayment', () => {
   it('uses the trusted membership price instead of a client supplied amount', async () => {
-    process.env.ZARINPAL_CALLBACK_URL =
-      'https://api.example.test/api/v1/payments/zarinpal/callback';
     const membership = {
       id: 'membership-1',
       tenantId: 'tenant-1',
@@ -104,7 +105,6 @@ describe('PaymentsService.startZarinpalPayment', () => {
       expect.objectContaining({ amountToman: 850000, mobile: '09120000000' }),
     );
     expect(result.redirectUrl).toContain('payment.zarinpal.com');
-    delete process.env.ZARINPAL_CALLBACK_URL;
   });
 });
 

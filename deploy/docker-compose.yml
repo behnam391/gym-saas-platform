@@ -70,6 +70,7 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      PLATFORM_SECRETS_KEY: ${PLATFORM_SECRETS_KEY:?PLATFORM_SECRETS_KEY is required}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       S3_BUCKET: ${S3_BUCKET:-}
@@ -110,7 +111,10 @@ services:
       backend: { condition: service_healthy }
       redis: { condition: service_healthy }
     environment:
+      DATABASE_URL: postgresql://gym_app:${POSTGRES_APP_PASSWORD}@postgres:5432/gym_saas?schema=public
+      DATABASE_ADMIN_URL: postgresql://gym_admin:${POSTGRES_ADMIN_PASSWORD}@postgres:5432/gym_saas?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      PLATFORM_SECRETS_KEY: ${PLATFORM_SECRETS_KEY:?PLATFORM_SECRETS_KEY is required}
       KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:-}
       KAVENEGAR_SENDER: ${KAVENEGAR_SENDER:-}
       KAVENEGAR_ALLOWED_RECIPIENTS: ${KAVENEGAR_ALLOWED_RECIPIENTS:-}

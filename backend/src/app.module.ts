@@ -32,6 +32,7 @@ import { PlatformProfessionalsModule } from './platform-professionals/platform-p
 import { SiteContentModule } from './site-content/site-content.module';
 import { ProfessionalFinanceModule } from './professional-finance/professional-finance.module';
 import { HealthController } from './health.controller';
+import { PlatformIntegrationsRuntimeModule } from './integrations/platform-integrations-runtime.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { HealthController } from './health.controller';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]), // global default; tighter per-route via @Throttle
     JwtModule.register({}),
     PrismaModule,
+    PlatformIntegrationsRuntimeModule,
     AuthModule,
     AttendanceModule,
     TrainersModule,

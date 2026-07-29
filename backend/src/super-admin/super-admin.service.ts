@@ -23,6 +23,22 @@ const PLATFORM_USER_SELECT = {
   tenant: { select: { id: true, name: true, city: true } },
 } satisfies Prisma.UserSelect;
 
+const INTEGRATION_PUBLIC_SELECT = {
+  id: true,
+  key: true,
+  label: true,
+  category: true,
+  provider: true,
+  status: true,
+  baseUrl: true,
+  requiredEnvVars: true,
+  notes: true,
+  configuredFields: true,
+  lastCheckedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PlatformIntegrationSelect;
+
 @Injectable()
 export class SuperAdminService {
   constructor(private readonly prisma: PrismaService) {}
@@ -184,7 +200,10 @@ export class SuperAdminService {
   }
 
   listIntegrations() {
-    return this.prisma.forPlatform().platformIntegration.findMany({ orderBy: [{ category: 'asc' }, { label: 'asc' }] });
+    return this.prisma.forPlatform().platformIntegration.findMany({
+      select: INTEGRATION_PUBLIC_SELECT,
+      orderBy: [{ category: 'asc' }, { label: 'asc' }],
+    });
   }
 
   async updateIntegration(key: string, dto: UpdateIntegrationDto) {
@@ -194,6 +213,7 @@ export class SuperAdminService {
     return db.platformIntegration.update({
       where: { key },
       data: { ...dto, lastCheckedAt: dto.status === 'HEALTHY' ? new Date() : integration.lastCheckedAt },
+      select: INTEGRATION_PUBLIC_SELECT,
     });
   }
 

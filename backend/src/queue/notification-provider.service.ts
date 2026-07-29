@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 
 export interface SendSmsInput {
   to: string;
@@ -15,16 +16,16 @@ export interface SendEmailInput {
 export class NotificationProviderService {
   private readonly logger = new Logger(NotificationProviderService.name);
 
+  constructor(
+    private readonly integrationConfig: PlatformIntegrationConfigService,
+  ) {}
+
   async sendSms(input: SendSmsInput): Promise<void> {
-    const apiKey =
-      process.env.KAVENEGAR_API_KEY?.trim() ||
-      process.env.SMS_PROVIDER_API_KEY?.trim();
+    const config = await this.integrationConfig.getSmsGatewayConfig();
     const recipient = this.normalizeMobile(input.to);
-    const allowedRecipients = (process.env.KAVENEGAR_ALLOWED_RECIPIENTS ?? '')
-      .split(',')
-      .map((value) => this.normalizeMobile(value))
-      .filter(Boolean);
-    const dryRun = process.env.KAVENEGAR_DRY_RUN !== 'false';
+    const apiKey = config?.apiKey;
+    const allowedRecipients = config?.allowedRecipients ?? [];
+    const dryRun = config?.dryRun ?? true;
 
     if (!apiKey || dryRun) {
       this.logger.warn(`[SMS dry-run] to=${this.maskMobile(recipient)}`);
@@ -44,7 +45,7 @@ export class NotificationProviderService {
       receptor: recipient,
       message: input.text,
     });
-    const sender = process.env.KAVENEGAR_SENDER?.trim();
+    const sender = config?.sender?.trim();
     if (sender) body.set('sender', sender);
 
     const response = await fetch(

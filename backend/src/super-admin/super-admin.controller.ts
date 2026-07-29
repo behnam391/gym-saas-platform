@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -9,14 +9,23 @@ import {
   SetTenantActiveDto,
   SetUserAccessDto,
   UpdateIntegrationDto,
+  SaveIntegrationCredentialsDto,
   VerifyTenantDto,
 } from './dto/super-admin.dto';
+import { PlatformIntegrationsAdminService } from './platform-integrations-admin.service';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('super-admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
 export class SuperAdminController {
-  constructor(private readonly superAdminService: SuperAdminService) {}
+  constructor(
+    private readonly superAdminService: SuperAdminService,
+    private readonly integrationsAdmin: PlatformIntegrationsAdminService,
+  ) {}
 
   @Get('overview')
   overview() {
@@ -65,7 +74,24 @@ export class SuperAdminController {
 
   @Get('integrations')
   listIntegrations() {
-    return this.superAdminService.listIntegrations();
+    return this.integrationsAdmin.list();
+  }
+
+  @Patch('integrations/:key/credentials')
+  saveIntegrationCredentials(
+    @Param('key') key: string,
+    @Body() dto: SaveIntegrationCredentialsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.integrationsAdmin.save(key, dto, user.userId);
+  }
+
+  @Post('integrations/:key/test')
+  testIntegration(
+    @Param('key') key: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.integrationsAdmin.test(key, user.userId);
   }
 
   @Patch('integrations/:key')

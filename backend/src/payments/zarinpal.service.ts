@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import ZarinPal from 'zarinpal-node-sdk';
+import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 
 interface ZarinpalResponse<T> {
   data?: T;
@@ -13,25 +14,22 @@ export interface VerifiedPayment {
 
 @Injectable()
 export class ZarinpalService {
-  private readonly client: ZarinPal | null;
+  constructor(
+    private readonly integrationConfig: PlatformIntegrationConfigService,
+  ) {}
 
-  constructor() {
-    const merchantId = process.env.ZARINPAL_MERCHANT_ID?.trim();
-    this.client = merchantId
-      ? new ZarinPal({
-          merchantId,
-          accessToken: '',
-          sandbox: process.env.ZARINPAL_SANDBOX === 'true',
-        })
-      : null;
+  async isConfigured() {
+    return Boolean(await this.integrationConfig.getPaymentGatewayConfig());
   }
 
-  isConfigured() {
-    return Boolean(this.client);
+  async getCallbackUrl() {
+    const config = await this.integrationConfig.getPaymentGatewayConfig();
+    if (config?.callbackUrl) return config.callbackUrl;
+    throw new ServiceUnavailableException('آدرس بازگشت درگاه تنظیم نشده است.');
   }
 
-  getRedirectUrl(authority: string) {
-    return this.requireClient().payments.getRedirectUrl(authority);
+  async getRedirectUrl(authority: string) {
+    return (await this.requireClient()).payments.getRedirectUrl(authority);
   }
 
   async requestPayment(input: {
@@ -40,7 +38,7 @@ export class ZarinpalService {
     description: string;
     mobile?: string;
   }) {
-    const client = this.requireClient();
+    const client = await this.requireClient();
     const response = (await client.payments.create({
       // The official SDK sends IRR, while Gordyar stores prices in toman.
       amount: this.toRial(input.amountToman),
@@ -59,7 +57,7 @@ export class ZarinpalService {
   }
 
   async verifyPayment(authority: string, amountToman: number): Promise<VerifiedPayment> {
-    const client = this.requireClient();
+    const client = await this.requireClient();
     const response = (await client.verifications.verify({
       authority,
       amount: this.toRial(amountToman),
@@ -79,13 +77,18 @@ export class ZarinpalService {
     };
   }
 
-  private requireClient() {
-    if (!this.client) {
+  private async requireClient() {
+    const config = await this.integrationConfig.getPaymentGatewayConfig();
+    if (!config) {
       throw new ServiceUnavailableException(
         'درگاه پرداخت هنوز توسط مدیر سامانه فعال نشده است.',
       );
     }
-    return this.client;
+    return new ZarinPal({
+      merchantId: config.merchantId,
+      accessToken: '',
+      sandbox: config.sandbox,
+    });
   }
 
   private toRial(amountToman: number) {

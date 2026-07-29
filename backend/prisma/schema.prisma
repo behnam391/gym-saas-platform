@@ -1066,6 +1066,8 @@ model PlatformIntegration {
   baseUrl         String?
   requiredEnvVars String[]
   notes           String?           @db.Text
+  encryptedConfig String?           @db.Text
+  configuredFields String[]          @default([])
   lastCheckedAt   DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
