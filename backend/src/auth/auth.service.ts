@@ -11,13 +11,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, LoginDto } from './dto/login.dto';
 import { isMinor as checkIsMinor } from '../common/age.util';
+import { OtpService } from './otp.service';
+import {
+  OtpLoginDto,
+  RequestOtpDto,
+  ResetPasswordDto,
+  VerifyOtpDto,
+} from './dto/otp.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly otp: OtpService,
   ) {}
+
+  requestOtp(dto: RequestOtpDto) {
+    return this.otp.request(dto);
+  }
+
+  verifyOtp(dto: VerifyOtpDto) {
+    return this.otp.verify(dto.challengeId, dto.code);
+  }
 
   /**
    * Registration is a pre-authentication, cross-tenant-by-necessity flow
@@ -75,6 +91,22 @@ export class AuthService {
     }
     const isMinor = checkIsMinor(dob);
 
+    const verification = await this.otp.consume(
+      dto.verificationToken,
+      'REGISTER',
+      dto.mobile === dto.email
+        ? dto.mobile
+        : undefined,
+    );
+    if (
+      verification.destination !== dto.mobile &&
+      verification.destination !== dto.email?.trim().toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'شماره موبایل یا ایمیل تأییدشده با اطلاعات فرم یکسان نیست.',
+      );
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = await db.user.create({
@@ -85,7 +117,7 @@ export class AuthService {
         lastName: dto.lastName,
         nationalId: dto.nationalId,
         mobile: dto.mobile,
-        email: dto.email,
+        email: dto.email?.trim().toLowerCase(),
         passwordHash,
         gender: dto.gender as any,
         dateOfBirth: dob,
@@ -94,6 +126,10 @@ export class AuthService {
         // their uploaded ParentalConsent — enforced again at the service
         // layer for every gated action, not just at signup.
         isRestricted: isMinor,
+        mobileVerifiedAt:
+          verification.channel === 'SMS' ? new Date() : undefined,
+        emailVerifiedAt:
+          verification.channel === 'EMAIL' ? new Date() : undefined,
         city: dto.city,
         address: dto.address,
         athleteProfile: { create: {} },
@@ -144,6 +180,88 @@ export class AuthService {
     }
 
     return this.issueTokens(db, user.id, user.role, user.tenantId);
+  }
+
+  async loginWithOtp(dto: OtpLoginDto) {
+    const verification = await this.otp.consume(
+      dto.verificationToken,
+      'LOGIN',
+    );
+    const db = this.prisma.forPlatform();
+    const user = await db.user.findFirst({
+      where: {
+        role: dto.expectedRole,
+        isActive: true,
+        OR: [
+          { mobile: verification.destination },
+          { email: verification.destination },
+        ],
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException(
+        'حساب فعالی برای این درگاه ورود پیدا نشد.',
+      );
+    }
+    await db.user.update({
+      where: { id: user.id },
+      data:
+        verification.channel === 'SMS'
+          ? { mobileVerifiedAt: user.mobileVerifiedAt ?? new Date() }
+          : { emailVerifiedAt: user.emailVerifiedAt ?? new Date() },
+    });
+    return this.issueTokens(db, user.id, user.role, user.tenantId);
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const verification = await this.otp.consume(
+      dto.verificationToken,
+      'RESET_PASSWORD',
+    );
+    const db = this.prisma.forPlatform();
+    const user = await db.user.findFirst({
+      where: {
+        isActive: true,
+        OR: [
+          { mobile: verification.destination },
+          { email: verification.destination },
+        ],
+      },
+      select: { id: true, passwordHash: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException(
+        'حساب فعالی با این مشخصات پیدا نشد.',
+      );
+    }
+    const samePassword = await bcrypt.compare(
+      dto.newPassword,
+      user.passwordHash,
+    );
+    if (samePassword) {
+      throw new BadRequestException(
+        'رمز عبور جدید باید با رمز قبلی متفاوت باشد.',
+      );
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await db.$transaction([
+      db.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          ...(verification.channel === 'SMS'
+            ? { mobileVerifiedAt: new Date() }
+            : { emailVerifiedAt: new Date() }),
+        },
+      }),
+      db.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    return {
+      message: 'رمز عبور با موفقیت تغییر کرد. اکنون وارد حساب شوید.',
+    };
   }
 
   async refresh(refreshToken: string) {

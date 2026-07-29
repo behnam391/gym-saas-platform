@@ -9,6 +9,7 @@ import { MembershipCard } from './membership-card';
 import { Input } from './input';
 import { Button } from './button';
 import { api, ApiError } from '../../lib/api';
+import { ContactVerification } from './contact-verification';
 
 interface FormState {
   firstName: string;
@@ -35,6 +36,9 @@ function Form() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [verificationToken, setVerificationToken] = useState<string | null>(
+    null,
+  );
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -46,6 +50,7 @@ function Form() {
     try {
       const payload = {
         ...form,
+        verificationToken,
         email: form.email.trim() || undefined,
         tenantId: searchParams.get('tenantId') ?? undefined,
         membershipPlanId: searchParams.get('membershipPlanId') ?? undefined,
@@ -79,6 +84,12 @@ function Form() {
             <Input label="کد ملی" inputMode="numeric" value={form.nationalId} onChange={(event) => update('nationalId', event.target.value)} required className="sm:col-span-2" />
             <Input label="شماره موبایل" inputMode="tel" value={form.mobile} onChange={(event) => update('mobile', event.target.value)} required className="sm:col-span-2" />
             <Input label="ایمیل (اختیاری)" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} className="sm:col-span-2" />
+            <ContactVerification
+              mobile={form.mobile}
+              email={form.email}
+              purpose="REGISTER"
+              onVerified={setVerificationToken}
+            />
             <Input label="رمز عبور" type="password" minLength={8} value={form.password} onChange={(event) => update('password', event.target.value)} required className="sm:col-span-2" />
             <label className="flex flex-col gap-1.5 text-sm text-muted">جنسیت<select value={form.gender} onChange={(event) => update('gender', event.target.value as FormState['gender'])} className="h-11 rounded-xl border border-border/10 bg-surface px-3 text-ink"><option value="MALE">مرد</option><option value="FEMALE">زن</option></select></label>
             <Input label="تاریخ تولد" type="date" value={form.dateOfBirth} onChange={(event) => update('dateOfBirth', event.target.value)} required />
@@ -86,7 +97,7 @@ function Form() {
             <Input label="آدرس (اختیاری)" value={form.address} onChange={(event) => update('address', event.target.value)} className="sm:col-span-2" />
             {message && <p className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success sm:col-span-2">{message}</p>}
             {error && <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger sm:col-span-2">{error}</p>}
-            <Button type="submit" disabled={loading} className="mt-1 w-full sm:col-span-2">{loading ? 'در حال ساخت حساب…' : 'ساخت حساب ورزشکار'}</Button>
+            <Button type="submit" disabled={loading || !verificationToken} className="mt-1 w-full sm:col-span-2">{loading ? 'در حال ساخت حساب…' : 'ساخت حساب ورزشکار'}</Button>
             <p className="flex items-start gap-2 text-xs leading-5 text-muted sm:col-span-2"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />برای افراد زیر ۱۸ سال، برخی امکانات تا تأیید رضایت‌نامه والدین محدود می‌ماند.</p>
           </form>
         </MembershipCard>

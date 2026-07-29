@@ -8,12 +8,21 @@ describe('OnboardingService', () => {
       create: jest.fn(),
     },
   };
-  const service = new OnboardingService({ forPlatform: () => db } as never);
+  const otp = {
+    consume: jest.fn().mockImplementation((token: string) =>
+      Promise.resolve({ destination: token, channel: 'SMS' }),
+    ),
+  };
+  const service = new OnboardingService(
+    { forPlatform: () => db } as never,
+    otp as never,
+  );
 
   beforeEach(() => jest.clearAllMocks());
 
   it('requires organization details for gym-owner applications', async () => {
     await expect(service.create({
+      verificationToken: '09120000001',
       type: 'GYM_OWNER',
       firstName: 'رضا',
       lastName: 'مدیری',
@@ -26,6 +35,7 @@ describe('OnboardingService', () => {
   it('blocks duplicate pending applications for the same role and mobile', async () => {
     db.onboardingApplication.findFirst.mockResolvedValue({ id: 'pending-1' });
     await expect(service.create({
+      verificationToken: '09120000003',
       type: 'TRAINER',
       firstName: 'علی',
       lastName: 'رضایی',
@@ -46,6 +56,7 @@ describe('OnboardingService', () => {
     });
 
     const result = await service.create({
+      verificationToken: '09120000004',
       type: 'NUTRITIONIST',
       firstName: ' سارا ',
       lastName: ' احمدی ',

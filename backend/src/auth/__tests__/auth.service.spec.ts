@@ -7,10 +7,19 @@ import * as bcrypt from 'bcrypt';
 function makeService(db: any) {
   const prisma = { forPlatform: () => db } as unknown as PrismaService;
   const jwt = { sign: jest.fn() } as any;
-  return new AuthService(prisma, jwt);
+  const otp = {
+    consume: jest.fn().mockResolvedValue({
+      channel: 'SMS',
+      destination: '09120000000',
+    }),
+    request: jest.fn(),
+    verify: jest.fn(),
+  } as any;
+  return new AuthService(prisma, jwt, otp);
 }
 
 const baseDto = {
+  verificationToken: 'verified-registration-token',
   firstName: 'علی',
   lastName: 'محمدی',
   nationalId: '0012345678',

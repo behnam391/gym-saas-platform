@@ -18,6 +18,10 @@ export enum GenderDto {
 }
 
 export class RegisterDto {
+  @IsString()
+  @IsNotEmpty({ message: 'تأیید شماره موبایل یا ایمیل الزامی است.' })
+  verificationToken: string;
+
   @IsString({ message: 'نام الزامی است.' })
   @IsNotEmpty({ message: 'نام الزامی است.' })
   firstName: string;

@@ -9,10 +9,14 @@ import {
   CreateOnboardingApplicationDto,
   ReviewOnboardingApplicationDto,
 } from './dto/onboarding.dto';
+import { OtpService } from '../auth/otp.service';
 
 @Injectable()
 export class OnboardingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly otp: OtpService,
+  ) {}
 
   async create(dto: CreateOnboardingApplicationDto) {
     if (dto.type === 'GYM_OWNER' && (!dto.gymName?.trim() || !dto.province?.trim() || !dto.address?.trim())) {
@@ -20,6 +24,19 @@ export class OnboardingService {
     }
     if (dto.type !== 'GYM_OWNER' && !dto.specialty?.trim()) {
       throw new BadRequestException('حوزه تخصص برای درخواست همکاری الزامی است.');
+    }
+
+    const verification = await this.otp.consume(
+      dto.verificationToken,
+      'ONBOARDING',
+    );
+    if (
+      verification.destination !== dto.mobile &&
+      verification.destination !== dto.email?.trim().toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'شماره موبایل یا ایمیل تأییدشده با اطلاعات فرم یکسان نیست.',
+      );
     }
 
     const db = this.prisma.forPlatform();
@@ -37,7 +54,9 @@ export class OnboardingService {
 
     const application = await db.onboardingApplication.create({
       data: {
-        ...dto,
+        type: dto.type,
+        nationalId: dto.nationalId,
+        mobile: dto.mobile,
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
         city: dto.city.trim(),

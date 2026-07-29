@@ -182,6 +182,18 @@ enum NotificationChannel {
   PUSH
 }
 
+enum OtpChannel {
+  SMS
+  EMAIL
+}
+
+enum OtpPurpose {
+  REGISTER
+  ONBOARDING
+  RESET_PASSWORD
+  LOGIN
+}
+
 enum AdvertisementStatus {
   DRAFT
   PENDING
@@ -426,6 +438,22 @@ model RefreshToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+model OtpChallenge {
+  id          String     @id @default(uuid())
+  channel     OtpChannel
+  purpose     OtpPurpose
+  destination String
+  codeHash    String
+  expiresAt   DateTime
+  attempts    Int        @default(0)
+  verifiedAt  DateTime?
+  consumedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([destination, purpose, createdAt])
+  @@index([expiresAt])
 }
 
 model ParentalConsent {

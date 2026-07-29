@@ -10,6 +10,9 @@ import {
 const APPLICATION_TYPES = ['GYM_OWNER', 'TRAINER', 'NUTRITIONIST'] as const;
 
 export class CreateOnboardingApplicationDto {
+  @IsString()
+  verificationToken: string;
+
   @IsIn(APPLICATION_TYPES)
   type: typeof APPLICATION_TYPES[number];
 

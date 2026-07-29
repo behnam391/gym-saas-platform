@@ -89,6 +89,12 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
             )}
             <Input label="شماره موبایل یا کد ملی" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required />
             <Input label="رمز عبور" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+            <Link
+              href={`/auth/forgot-password?portal=${portal}`}
+              className="-mt-2 w-fit text-xs font-bold text-accent-soft hover:underline"
+            >
+              رمز عبور را فراموش کرده‌اید؟
+            </Link>
             {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
             <Button type="submit" disabled={loading} className="mt-1 w-full">{loading ? 'در حال ورود…' : `ورود به پنل ${config.title}`}</Button>
             {showDemo && (

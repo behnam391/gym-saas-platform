@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
 import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 
 export interface SendSmsInput {
@@ -12,6 +13,8 @@ export interface SendEmailInput {
   html: string;
 }
 
+export type DeliveryResult = 'SENT' | 'DRY_RUN' | 'BLOCKED';
+
 @Injectable()
 export class NotificationProviderService {
   private readonly logger = new Logger(NotificationProviderService.name);
@@ -20,7 +23,7 @@ export class NotificationProviderService {
     private readonly integrationConfig: PlatformIntegrationConfigService,
   ) {}
 
-  async sendSms(input: SendSmsInput): Promise<void> {
+  async sendSms(input: SendSmsInput): Promise<DeliveryResult> {
     const config = await this.integrationConfig.getSmsGatewayConfig();
     const recipient = this.normalizeMobile(input.to);
     const apiKey = config?.apiKey;
@@ -29,7 +32,7 @@ export class NotificationProviderService {
 
     if (!apiKey || dryRun) {
       this.logger.warn(`[SMS dry-run] to=${this.maskMobile(recipient)}`);
-      return;
+      return 'DRY_RUN';
     }
     if (
       !allowedRecipients.includes('*') &&
@@ -38,7 +41,7 @@ export class NotificationProviderService {
       this.logger.warn(
         `[SMS blocked: recipient is not allowed] to=${this.maskMobile(recipient)}`,
       );
-      return;
+      return 'BLOCKED';
     }
 
     const body = new URLSearchParams({
@@ -65,14 +68,34 @@ export class NotificationProviderService {
         `Kavenegar rejected SMS (${result?.return?.status ?? response.status}): ${result?.return?.message ?? 'unknown error'}`,
       );
     }
+    return 'SENT';
   }
 
-  async sendEmail(input: SendEmailInput): Promise<void> {
+  async sendEmail(input: SendEmailInput): Promise<DeliveryResult> {
     if (!process.env.SMTP_HOST) {
       this.logger.warn(`[Email dry-run] to=${input.to} subject=${input.subject}`);
-      return;
+      return 'DRY_RUN';
     }
-    throw new Error('Email provider is not configured yet.');
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: process.env.SMTP_SECURE === 'true' || port === 465,
+      auth:
+        process.env.SMTP_USER && process.env.SMTP_PASSWORD
+          ? {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASSWORD,
+            }
+          : undefined,
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? 'Gordyar <no-reply@gordyar.ir>',
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+    });
+    return 'SENT';
   }
 
   private normalizeMobile(value: string) {
