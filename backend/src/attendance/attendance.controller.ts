@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -6,6 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { AttendanceService } from './attendance.service';
 import { CheckInDto, RedeemAttendancePassDto } from './dto/check-in.dto';
+import { AttendanceReportQueryDto } from './dto/attendance-report.dto';
 
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,5 +53,11 @@ export class AttendanceController {
   @Roles('RECEPTION', 'GYM_OWNER')
   listRecent() {
     return this.attendanceService.listRecent();
+  }
+
+  @Get('report')
+  @Roles('GYM_OWNER')
+  report(@Query() query: AttendanceReportQueryDto) {
+    return this.attendanceService.report(query);
   }
 }

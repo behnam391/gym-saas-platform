@@ -10,6 +10,7 @@ import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
 import { CheckInDto } from './dto/check-in.dto';
+import { AttendanceReportQueryDto } from './dto/attendance-report.dto';
 
 const CROWD_CAPACITY_DEFAULT = 80; // overridable per-tenant in a future settings table
 const PASS_TTL_SECONDS = 30;
@@ -288,5 +289,88 @@ export class AttendanceService implements OnModuleDestroy {
         take: 200,
       }),
     );
+  }
+
+  async report(query: AttendanceReportQueryDto) {
+    const now = new Date();
+    const defaultFrom = new Date(now);
+    defaultFrom.setUTCDate(defaultFrom.getUTCDate() - 30);
+    const from = query.from ? new Date(query.from) : defaultFrom;
+    const to = query.to ? new Date(query.to) : now;
+
+    if (
+      Number.isNaN(from.getTime()) ||
+      Number.isNaN(to.getTime()) ||
+      from >= to
+    ) {
+      throw new BadRequestException('بازه زمانی گزارش معتبر نیست.');
+    }
+    const rangeDays = (to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000);
+    if (rangeDays > 366) {
+      throw new BadRequestException('حداکثر بازه گزارش یک سال است.');
+    }
+
+    const search = query.search?.trim();
+    const fetched = await this.prisma.forTenant((tx) =>
+      tx.attendance.findMany({
+        where: {
+          checkInAt: { gte: from, lt: to },
+          ...(query.method ? { method: query.method as any } : {}),
+          ...(query.status === 'OPEN'
+            ? { checkOutAt: null }
+            : query.status === 'COMPLETED'
+              ? { checkOutAt: { not: null } }
+              : {}),
+          ...(search
+            ? {
+                user: {
+                  OR: [
+                    { firstName: { contains: search, mode: 'insensitive' } },
+                    { lastName: { contains: search, mode: 'insensitive' } },
+                    { mobile: { contains: search } },
+                  ],
+                },
+              }
+            : {}),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              mobile: true,
+            },
+          },
+          membership: { include: { plan: true } },
+        },
+        orderBy: { checkInAt: 'desc' },
+        take: 5001,
+      }),
+    );
+
+    const truncated = fetched.length > 5000;
+    const records = truncated ? fetched.slice(0, 5000) : fetched;
+    const completed = records.filter((record) => record.checkOutAt);
+    const totalMinutes = completed.reduce((sum, record) => {
+      const duration =
+        (record.checkOutAt!.getTime() - record.checkInAt.getTime()) / 60_000;
+      return sum + Math.max(0, Math.round(duration));
+    }, 0);
+
+    return {
+      records,
+      summary: {
+        totalVisits: records.length,
+        uniqueMembers: new Set(records.map((record) => record.userId)).size,
+        openVisits: records.length - completed.length,
+        completedVisits: completed.length,
+        totalMinutes,
+        averageMinutes:
+          completed.length > 0 ? Math.round(totalMinutes / completed.length) : 0,
+      },
+      truncated,
+      range: { from: from.toISOString(), to: to.toISOString() },
+    };
   }
 }
