@@ -219,11 +219,51 @@ export class SuperAdminService {
 
   async listSubscriptions() {
     const db = this.prisma.forPlatform();
-    const [plans, subscriptions] = await Promise.all([
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const [plans, subscriptions, revenue, pendingPayments, recentPayments] = await Promise.all([
       db.subscriptionPlan.findMany({ where: { isActive: true }, orderBy: { monthlyPrice: 'asc' } }),
       db.tenantSubscription.findMany({ include: { plan: true, tenant: { select: { id: true, name: true, city: true } } }, orderBy: { updatedAt: 'desc' } }),
+      db.payment.aggregate({
+        where: {
+          tenantSubscriptionId: { not: null },
+          status: 'SUCCEEDED',
+          paidAt: { gte: startOfMonth },
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      db.payment.count({
+        where: {
+          tenantSubscriptionId: { not: null },
+          status: 'PENDING',
+        },
+      }),
+      db.payment.findMany({
+        where: { tenantSubscriptionId: { not: null } },
+        include: {
+          tenant: { select: { id: true, name: true } },
+          subscriptionPlan: { select: { id: true, code: true, name: true } },
+          user: { select: { firstName: true, lastName: true, mobile: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
     ]);
-    return { plans, subscriptions };
+    return {
+      plans,
+      subscriptions,
+      recentPayments,
+      summary: {
+        revenueThisMonth: Number(revenue._sum.amount ?? 0),
+        successfulPaymentsThisMonth: revenue._count,
+        pendingPayments,
+        activeSubscriptions: subscriptions.filter(
+          (item) => item.status === 'ACTIVE',
+        ).length,
+      },
+    };
   }
 
   async assignSubscription(tenantId: string, dto: AssignSubscriptionDto) {

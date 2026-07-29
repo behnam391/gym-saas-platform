@@ -758,6 +758,11 @@ model Payment {
   membership   Membership? @relation(fields: [membershipId], references: [id])
   orderId      String?     @unique
   order        Order?      @relation(fields: [orderId], references: [id])
+  tenantSubscriptionId String?
+  tenantSubscription   TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id])
+  subscriptionPlanId   String?
+  subscriptionPlan     SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+  subscriptionMonths   Int?
 
   amount     Decimal       @db.Decimal(12, 2)
   method     PaymentMethod
@@ -770,6 +775,7 @@ model Payment {
 
   @@index([tenantId, userId])
   @@index([status])
+  @@index([tenantSubscriptionId, status])
 }
 
 model ProfessionalContract {
@@ -1038,6 +1044,7 @@ model SubscriptionPlan {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   subscriptions TenantSubscription[]
+  payments      Payment[]
 }
 
 model TenantSubscription {
@@ -1052,6 +1059,7 @@ model TenantSubscription {
   autoRenew Boolean            @default(true)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+  payments  Payment[]
 
   @@index([status, renewsAt])
 }

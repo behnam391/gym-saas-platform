@@ -8,8 +8,12 @@ import { Queue } from 'bullmq';
 function createService(
   tx: any,
   zarinpalOverrides: Partial<ZarinpalService> = {},
+  platformTx: any = tx,
 ) {
-  const prisma = { forTenant: jest.fn((fn: any) => fn(tx)) } as unknown as PrismaService;
+  const prisma = {
+    forTenant: jest.fn((fn: any) => fn(tx)),
+    forPlatform: jest.fn(() => platformTx),
+  } as unknown as PrismaService;
   const context = { requireTenantId: () => 'tenant-1' } as unknown as TenantContext;
   const zarinpal = {
     requestPayment: jest.fn(),
@@ -105,6 +109,140 @@ describe('PaymentsService.startZarinpalPayment', () => {
       expect.objectContaining({ amountToman: 850000, mobile: '09120000000' }),
     );
     expect(result.redirectUrl).toContain('payment.zarinpal.com');
+  });
+});
+
+describe('PaymentsService.startPlatformSubscriptionPayment', () => {
+  it('calculates the payable amount from the trusted plan price and selected term', async () => {
+    const plan = {
+      id: 'plan-pro',
+      code: 'PRO',
+      name: 'حرفه‌ای',
+      monthlyPrice: 450000,
+      isActive: true,
+    };
+    const tx = {
+      subscriptionPlan: { findFirst: jest.fn().mockResolvedValue(plan) },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'owner-1',
+          mobile: '09120000000',
+        }),
+      },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tenant-1',
+          name: 'باشگاه نمونه',
+        }),
+      },
+      tenantSubscription: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'subscription-1',
+          tenantId: 'tenant-1',
+        }),
+        create: jest.fn(),
+      },
+      payment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'payment-platform-1' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const requestPayment = jest.fn().mockResolvedValue({
+      authority: 'A000000000000000000000000000000000002',
+      redirectUrl: 'https://payment.zarinpal.com/pg/StartPay/platform',
+    });
+    const service = createService(tx, {
+      requestPayment,
+    } as Partial<ZarinpalService>);
+
+    const result = await service.startPlatformSubscriptionPayment(
+      {
+        userId: 'owner-1',
+        tenantId: 'tenant-1',
+        role: 'GYM_OWNER',
+      },
+      { planCode: 'PRO', months: 6 },
+    );
+
+    expect(tx.payment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 2700000,
+        subscriptionMonths: 6,
+        subscriptionPlanId: 'plan-pro',
+        tenantSubscriptionId: 'subscription-1',
+        status: 'PENDING',
+      }),
+    });
+    expect(requestPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amountToman: 2700000 }),
+    );
+    expect(result.redirectUrl).toContain('payment.zarinpal.com');
+  });
+});
+
+describe('PaymentsService.completeZarinpalPayment for platform subscriptions', () => {
+  it('activates the selected plan and extends an active subscription from its renewal date', async () => {
+    const payment = {
+      id: 'payment-platform-1',
+      amount: 450000,
+      status: 'PENDING',
+      membershipId: null,
+      membership: null,
+      tenantSubscriptionId: 'subscription-1',
+      tenantSubscription: {
+        id: 'subscription-1',
+        status: 'ACTIVE',
+        startsAt: new Date('2026-01-01T00:00:00.000Z'),
+        renewsAt: new Date('2027-01-31T00:00:00.000Z'),
+        plan: { id: 'plan-basic' },
+      },
+      subscriptionPlanId: 'plan-pro',
+      subscriptionPlan: { id: 'plan-pro', name: 'حرفه‌ای' },
+      subscriptionMonths: 1,
+      user: { mobile: '09120000000' },
+    };
+    const platformTx: any = {
+      payment: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(payment)
+          .mockResolvedValueOnce(payment),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      tenantSubscription: { update: jest.fn().mockResolvedValue({}) },
+      membership: { update: jest.fn() },
+      $transaction: jest.fn(),
+    };
+    platformTx.$transaction.mockImplementation(
+      (callback: (tx: any) => unknown) => callback(platformTx),
+    );
+    const verifyPayment = jest.fn().mockResolvedValue({
+      code: 100,
+      referenceId: '99887766',
+      cardPan: '6037-****-****-1234',
+    });
+    const service = createService(
+      {},
+      { verifyPayment } as Partial<ZarinpalService>,
+      platformTx,
+    );
+
+    const result = await service.completeZarinpalPayment({
+      authority: 'A000000000000000000000000000000000002',
+      status: 'OK',
+    });
+
+    expect(platformTx.tenantSubscription.update).toHaveBeenCalledWith({
+      where: { id: 'subscription-1' },
+      data: expect.objectContaining({
+        planId: 'plan-pro',
+        status: 'ACTIVE',
+        renewsAt: new Date('2027-02-28T00:00:00.000Z'),
+      }),
+    });
+    expect(platformTx.membership.update).not.toHaveBeenCalled();
+    expect(result.redirectUrl).toContain('kind=platform');
   });
 });
 

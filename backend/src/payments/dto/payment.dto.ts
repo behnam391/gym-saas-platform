@@ -2,6 +2,7 @@ import {
   IsDateString,
   IsIn,
   IsNumber,
+  IsInt,
   IsOptional,
   IsString,
   MaxLength,
@@ -21,6 +22,17 @@ export class RecordManualPaymentDto {
   @IsOptional()
   @IsString()
   gatewayRef?: string;
+}
+
+export class StartPlatformSubscriptionPaymentDto {
+  @IsString()
+  @MaxLength(60)
+  planCode: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([1, 3, 6, 12], { message: 'دوره اشتراک باید ۱، ۳، ۶ یا ۱۲ ماه باشد.' })
+  months: 1 | 3 | 6 | 12;
 }
 
 export class FinanceDashboardQueryDto {

@@ -4,7 +4,11 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
-import { FinanceDashboardQueryDto, RecordManualPaymentDto } from './dto/payment.dto';
+import {
+  FinanceDashboardQueryDto,
+  RecordManualPaymentDto,
+  StartPlatformSubscriptionPaymentDto,
+} from './dto/payment.dto';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,6 +34,21 @@ export class PaymentsController {
   @Roles('ATHLETE')
   listMine(@CurrentUser() user: AuthenticatedUser) {
     return this.payments.listMine(user.userId);
+  }
+
+  @Get('platform-subscription')
+  @Roles('GYM_OWNER')
+  platformSubscription() {
+    return this.payments.platformSubscriptionOverview();
+  }
+
+  @Post('platform-subscription/zarinpal')
+  @Roles('GYM_OWNER')
+  startPlatformSubscriptionPayment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: StartPlatformSubscriptionPaymentDto,
+  ) {
+    return this.payments.startPlatformSubscriptionPayment(user, dto);
   }
 
   @Get('summary')

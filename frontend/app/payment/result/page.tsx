@@ -6,11 +6,12 @@ import { buttonStyles } from '../../../components/ui/button';
 export default async function PaymentResultPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; payment?: string }>;
+  searchParams: Promise<{ status?: string; payment?: string; kind?: string }>;
 }) {
-  const { status, payment } = await searchParams;
+  const { status, payment, kind } = await searchParams;
   const success = status === 'success';
   const cancelled = status === 'cancelled';
+  const platformSubscription = kind === 'platform';
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-base px-4 py-12" dir="rtl">
@@ -29,7 +30,9 @@ export default async function PaymentResultPage({
         </h1>
         <p className="mt-3 leading-7 text-muted">
           {success
-            ? 'عضویت شما فعال شد و رسید رسمی در پنل پرداخت‌ها قابل مشاهده است.'
+            ? platformSubscription
+              ? 'اشتراک گُردیار باشگاه فعال شد و رسید رسمی در پنل اشتراک قابل مشاهده است.'
+              : 'عضویت شما فعال شد و رسید رسمی در پنل پرداخت‌ها قابل مشاهده است.'
             : 'مبلغی به‌عنوان پرداخت موفق ثبت نشده است؛ می‌توانید دوباره تلاش کنید.'}
         </p>
         {payment && (
@@ -39,10 +42,10 @@ export default async function PaymentResultPage({
           </div>
         )}
         <Link
-          href="/dashboard/athlete/payments"
+          href={platformSubscription ? '/dashboard/gym-owner/subscription' : '/dashboard/athlete/payments'}
           className={buttonStyles({ className: 'mt-7' })}
         >
-          مشاهده پرداخت‌ها و رسید
+          {platformSubscription ? 'بازگشت به اشتراک باشگاه' : 'مشاهده پرداخت‌ها و رسید'}
         </Link>
       </MembershipCard>
     </main>

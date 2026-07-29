@@ -4,6 +4,8 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
 import { FinanceDashboardQueryDto, RecordManualPaymentDto } from './dto/payment.dto';
+import { StartPlatformSubscriptionPaymentDto } from './dto/payment.dto';
+import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { ZarinpalService } from './zarinpal.service';
 import { NOTIFICATION_QUEUE } from '../queue/queue.module';
 import { NotificationJobData } from '../queue/notification.processor';
@@ -17,6 +19,138 @@ export class PaymentsService {
     @InjectQueue(NOTIFICATION_QUEUE)
     private readonly notificationQueue: Queue<NotificationJobData>,
   ) {}
+
+  async platformSubscriptionOverview() {
+    const tenantId = this.tenantContext.requireTenantId();
+    return this.prisma.forTenant(async (tx) => {
+      const [plans, subscription, payments] = await Promise.all([
+        tx.subscriptionPlan.findMany({
+          where: { isActive: true },
+          orderBy: { monthlyPrice: 'asc' },
+        }),
+        tx.tenantSubscription.findUnique({
+          where: { tenantId },
+          include: { plan: true },
+        }),
+        tx.payment.findMany({
+          where: { tenantSubscriptionId: { not: null } },
+          include: { subscriptionPlan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        }),
+      ]);
+      return { plans, subscription, payments };
+    });
+  }
+
+  async startPlatformSubscriptionPayment(
+    user: AuthenticatedUser,
+    dto: StartPlatformSubscriptionPaymentDto,
+  ) {
+    const tenantId = this.tenantContext.requireTenantId();
+    const prepared = await this.prisma.forTenant(async (tx) => {
+      const [plan, owner, tenant, currentSubscription] = await Promise.all([
+        tx.subscriptionPlan.findFirst({
+          where: { code: dto.planCode, isActive: true },
+        }),
+        tx.user.findFirst({
+          where: { id: user.userId, role: 'GYM_OWNER', isActive: true },
+          select: { id: true, mobile: true },
+        }),
+        tx.tenant.findUnique({
+          where: { id: tenantId },
+          select: { id: true, name: true },
+        }),
+        tx.tenantSubscription.findUnique({ where: { tenantId } }),
+      ]);
+      if (!plan) throw new NotFoundException('پلن اشتراک انتخاب‌شده پیدا نشد.');
+      if (!owner || !tenant) throw new NotFoundException('اطلاعات صاحب باشگاه پیدا نشد.');
+
+      const subscription =
+        currentSubscription ??
+        (await tx.tenantSubscription.create({
+          data: {
+            tenantId,
+            planId: plan.id,
+            status: 'PAST_DUE',
+            autoRenew: false,
+          },
+        }));
+
+      const existing = await tx.payment.findFirst({
+        where: {
+          tenantSubscriptionId: subscription.id,
+          subscriptionPlanId: plan.id,
+          subscriptionMonths: dto.months,
+          status: 'PENDING',
+          gatewayAuthority: { not: null },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (existing?.gatewayAuthority) {
+        return {
+          existingAuthority: existing.gatewayAuthority,
+          paymentId: existing.id,
+          amountToman: Number(existing.amount),
+          mobile: owner.mobile,
+          description: `اشتراک ${plan.name} گُردیار - ${tenant.name}`,
+        };
+      }
+
+      const amountToman = Number(plan.monthlyPrice) * dto.months;
+      const payment = await tx.payment.create({
+        data: {
+          tenantId,
+          userId: owner.id,
+          tenantSubscriptionId: subscription.id,
+          subscriptionPlanId: plan.id,
+          subscriptionMonths: dto.months,
+          amount: amountToman,
+          method: 'ONLINE_GATEWAY',
+          status: 'PENDING',
+        },
+      });
+      return {
+        paymentId: payment.id,
+        amountToman,
+        mobile: owner.mobile,
+        description: `اشتراک ${plan.name} گُردیار - ${tenant.name}`,
+      };
+    });
+
+    if (prepared.existingAuthority) {
+      return {
+        paymentId: prepared.paymentId,
+        redirectUrl: await this.zarinpal.getRedirectUrl(prepared.existingAuthority),
+      };
+    }
+
+    try {
+      const request = await this.zarinpal.requestPayment({
+        amountToman: prepared.amountToman,
+        callbackUrl: await this.zarinpal.getCallbackUrl(),
+        description: prepared.description,
+        mobile: prepared.mobile,
+      });
+      await this.prisma.forTenant((tx) =>
+        tx.payment.update({
+          where: { id: prepared.paymentId },
+          data: { gatewayAuthority: request.authority },
+        }),
+      );
+      return { paymentId: prepared.paymentId, redirectUrl: request.redirectUrl };
+    } catch (error) {
+      await this.prisma
+        .forTenant((tx) =>
+          tx.payment.update({
+            where: { id: prepared.paymentId },
+            data: { status: 'FAILED' },
+          }),
+        )
+        .catch(() => undefined);
+      throw error;
+    }
+  }
 
   async startZarinpalPayment(membershipId: string, userId: string) {
     const prepared = await this.prisma.forTenant(async (tx) => {
@@ -128,15 +262,23 @@ export class PaymentsService {
       where: { gatewayAuthority: input.authority },
       include: {
         membership: { include: { plan: true } },
+        tenantSubscription: { include: { plan: true } },
+        subscriptionPlan: true,
         user: { select: { mobile: true } },
       },
     });
-    if (!payment || !payment.membership) {
+    if (!payment || (!payment.membership && !payment.tenantSubscription)) {
       return { redirectUrl: `${webOrigin}/payment/result?status=invalid` };
     }
+    const isPlatformSubscription = Boolean(
+      payment.tenantSubscription &&
+        payment.subscriptionPlan &&
+        payment.subscriptionMonths,
+    );
+    const resultKind = isPlatformSubscription ? '&kind=platform' : '';
     if (payment.status === 'SUCCEEDED') {
       return {
-        redirectUrl: `${webOrigin}/payment/result?status=success&payment=${payment.id}`,
+        redirectUrl: `${webOrigin}/payment/result?status=success&payment=${payment.id}${resultKind}`,
       };
     }
     if (input.status?.toUpperCase() !== 'OK') {
@@ -145,7 +287,7 @@ export class PaymentsService {
         data: { status: 'FAILED' },
       });
       return {
-        redirectUrl: `${webOrigin}/payment/result?status=cancelled&payment=${payment.id}`,
+        redirectUrl: `${webOrigin}/payment/result?status=cancelled&payment=${payment.id}${resultKind}`,
       };
     }
 
@@ -158,8 +300,6 @@ export class PaymentsService {
         const current = await tx.payment.findUnique({ where: { id: payment.id } });
         if (!current || current.status === 'SUCCEEDED') return false;
         const now = new Date();
-        const endDate = new Date(now);
-        endDate.setDate(endDate.getDate() + payment.membership!.plan.durationDays);
         await tx.payment.update({
           where: { id: payment.id },
           data: {
@@ -169,10 +309,37 @@ export class PaymentsService {
             paidAt: now,
           },
         });
-        await tx.membership.update({
-          where: { id: payment.membershipId! },
-          data: { status: 'ACTIVE', startDate: now, endDate },
-        });
+        if (isPlatformSubscription) {
+          const subscription = payment.tenantSubscription!;
+          const baseDate =
+            subscription.status === 'ACTIVE' &&
+            subscription.renewsAt &&
+            subscription.renewsAt > now
+              ? subscription.renewsAt
+              : now;
+          await tx.tenantSubscription.update({
+            where: { id: subscription.id },
+            data: {
+              planId: payment.subscriptionPlanId!,
+              status: 'ACTIVE',
+              startsAt:
+                subscription.status === 'ACTIVE' ? subscription.startsAt : now,
+              renewsAt: this.addMonthsClamped(
+                baseDate,
+                payment.subscriptionMonths!,
+              ),
+            },
+          });
+        } else {
+          const endDate = new Date(now);
+          endDate.setDate(
+            endDate.getDate() + payment.membership!.plan.durationDays,
+          );
+          await tx.membership.update({
+            where: { id: payment.membershipId! },
+            data: { status: 'ACTIVE', startDate: now, endDate },
+          });
+        }
         return true;
       });
       if (activated) {
@@ -180,11 +347,13 @@ export class PaymentsService {
           channel: 'SMS',
           to: payment.user.mobile,
           title: 'گُردیار',
-          body: `پرداخت ${Number(payment.amount).toLocaleString('fa-IR')} تومان با موفقیت ثبت شد. کد پیگیری: ${verified.referenceId}`,
+          body: isPlatformSubscription
+            ? `اشتراک ${payment.subscriptionPlan!.name} گُردیار برای ${payment.subscriptionMonths} ماه فعال شد. کد پیگیری: ${verified.referenceId}`
+            : `پرداخت ${Number(payment.amount).toLocaleString('fa-IR')} تومان با موفقیت ثبت شد. کد پیگیری: ${verified.referenceId}`,
         });
       }
       return {
-        redirectUrl: `${webOrigin}/payment/result?status=success&payment=${payment.id}`,
+        redirectUrl: `${webOrigin}/payment/result?status=success&payment=${payment.id}${resultKind}`,
       };
     } catch {
       await db.payment.update({
@@ -192,9 +361,23 @@ export class PaymentsService {
         data: { status: 'FAILED' },
       });
       return {
-        redirectUrl: `${webOrigin}/payment/result?status=failed&payment=${payment.id}`,
+        redirectUrl: `${webOrigin}/payment/result?status=failed&payment=${payment.id}${resultKind}`,
       };
     }
+  }
+
+  private addMonthsClamped(date: Date, months: number) {
+    const result = new Date(date);
+    const originalDay = result.getDate();
+    result.setDate(1);
+    result.setMonth(result.getMonth() + months);
+    const lastDay = new Date(
+      result.getFullYear(),
+      result.getMonth() + 1,
+      0,
+    ).getDate();
+    result.setDate(Math.min(originalDay, lastDay));
+    return result;
   }
 
   private webOrigin() {
@@ -259,6 +442,7 @@ export class PaymentsService {
   listForTenant() {
     return this.prisma.forTenant((tx) =>
       tx.payment.findMany({
+        where: { tenantSubscriptionId: null },
         include: {
           user: { select: { firstName: true, lastName: true, mobile: true } },
           membership: { include: { plan: true } },
@@ -288,11 +472,17 @@ export class PaymentsService {
       startOfMonth.setHours(0, 0, 0, 0);
       const [payments, pendingCount, activeMemberships] = await Promise.all([
         tx.payment.aggregate({
-          where: { status: 'SUCCEEDED', paidAt: { gte: startOfMonth } },
+          where: {
+            status: 'SUCCEEDED',
+            paidAt: { gte: startOfMonth },
+            tenantSubscriptionId: null,
+          },
           _sum: { amount: true },
           _count: true,
         }),
-        tx.payment.count({ where: { status: 'PENDING' } }),
+        tx.payment.count({
+          where: { status: 'PENDING', tenantSubscriptionId: null },
+        }),
         tx.membership.count({ where: { status: 'ACTIVE' } }),
       ]);
       return {
@@ -319,6 +509,7 @@ export class PaymentsService {
     const search = query.search?.trim();
     return this.prisma.forTenant(async (tx) => {
       const paymentWhere = {
+        tenantSubscriptionId: null,
         createdAt: { gte: from, lt: to },
         ...(query.status ? { status: query.status } : {}),
         ...(query.method ? { method: query.method } : {}),
@@ -383,6 +574,7 @@ export class PaymentsService {
         tx.payment.findMany({
           where: {
             status: 'SUCCEEDED',
+            tenantSubscriptionId: null,
             createdAt: {
               gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1)),
             },
