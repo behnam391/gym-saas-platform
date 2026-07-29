@@ -357,7 +357,7 @@ export function FinanceDashboard() {
       <MembershipCard className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-5">
           <div><h2 className="font-bold">تراکنش‌های مالی</h2><p className="mt-1 text-xs text-muted">{(data?.transactions.length ?? 0).toLocaleString('fa-IR')} تراکنش در بازه انتخابی</p></div>
-          <p className="flex items-center gap-2 text-xs text-muted"><AlertTriangle className="size-4 text-warning" />تسویه مربی پس از ثبت نوع قرارداد و درصد سهم فعال می‌شود.</p>
+          <a href="/dashboard/gym-owner/settlements" className="flex items-center gap-2 text-xs text-accent-soft hover:text-accent"><AlertTriangle className="size-4 text-warning" />قرارداد و تسویه مربیان و مشاوران را مدیریت کنید.</a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-right text-sm">

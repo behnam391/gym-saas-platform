@@ -30,6 +30,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { TenantStaffModule } from './tenant-staff/tenant-staff.module';
 import { PlatformProfessionalsModule } from './platform-professionals/platform-professionals.module';
 import { SiteContentModule } from './site-content/site-content.module';
+import { ProfessionalFinanceModule } from './professional-finance/professional-finance.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -63,6 +64,7 @@ import { HealthController } from './health.controller';
     TenantStaffModule,
     PlatformProfessionalsModule,
     SiteContentModule,
+    ProfessionalFinanceModule,
   ],
   controllers: [HealthController],
 })

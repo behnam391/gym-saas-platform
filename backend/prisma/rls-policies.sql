@@ -27,7 +27,8 @@ DECLARE
     'CafeteriaProduct', 'Order', 'Ticket', 'Review', 'Notification',
     'Message', 'AuditLog', 'TenantGalleryImage', 'TenantFacility',
     'Advertisement', 'AttendanceDevice', 'AttendanceCredential',
-    'FinancialAccount', 'TenantSubscription'
+    'FinancialAccount', 'TenantSubscription', 'ProfessionalContract',
+    'ProfessionalSettlement'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tenant_scoped_tables LOOP
