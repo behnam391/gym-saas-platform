@@ -10,6 +10,8 @@ import {
   SetAttendanceCredentialStatusDto,
   SetAttendanceDeviceStatusDto,
 } from './dto/attendance-device.dto';
+import { SubscriptionFeatureGuard } from '../subscriptions/subscription-feature.guard';
+import { RequiresSubscriptionFeature } from '../subscriptions/requires-subscription-feature.decorator';
 
 @Controller('attendance-devices')
 export class AttendanceDevicesController {
@@ -21,20 +23,23 @@ export class AttendanceDevicesController {
   list() { return this.service.list(); }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionFeatureGuard)
   @Roles('GYM_OWNER')
+  @RequiresSubscriptionFeature('DEVICE_INTEGRATION')
   create(@Body() dto: CreateAttendanceDeviceDto) { return this.service.create(dto); }
 
   @Patch(':deviceId/status')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionFeatureGuard)
   @Roles('GYM_OWNER')
+  @RequiresSubscriptionFeature('DEVICE_INTEGRATION')
   setStatus(@Param('deviceId') deviceId: string, @Body() dto: SetAttendanceDeviceStatusDto) {
     return this.service.setStatus(deviceId, dto);
   }
 
   @Post('credentials')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionFeatureGuard)
   @Roles('GYM_OWNER', 'RECEPTION')
+  @RequiresSubscriptionFeature('DEVICE_INTEGRATION')
   addCredential(@Body() dto: CreateAttendanceCredentialDto) { return this.service.addCredential(dto); }
 
   @Get('credentials')
@@ -43,8 +48,9 @@ export class AttendanceDevicesController {
   listCredentials() { return this.service.listCredentials(); }
 
   @Patch('credentials/:credentialId/status')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionFeatureGuard)
   @Roles('GYM_OWNER', 'RECEPTION')
+  @RequiresSubscriptionFeature('DEVICE_INTEGRATION')
   setCredentialStatus(
     @Param('credentialId') credentialId: string,
     @Body() dto: SetAttendanceCredentialStatusDto,

@@ -19,6 +19,8 @@ import {
   SetProfessionalContractStatusDto,
 } from './dto/professional-finance.dto';
 import { ProfessionalFinanceService } from './professional-finance.service';
+import { SubscriptionFeatureGuard } from '../subscriptions/subscription-feature.guard';
+import { RequiresSubscriptionFeature } from '../subscriptions/requires-subscription-feature.decorator';
 
 @Controller('professional-finance')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,6 +34,8 @@ export class ProfessionalFinanceController {
   }
 
   @Post('contracts')
+  @UseGuards(SubscriptionFeatureGuard)
+  @RequiresSubscriptionFeature('PROFESSIONAL_FINANCE')
   createContract(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateProfessionalContractDto,
@@ -40,6 +44,8 @@ export class ProfessionalFinanceController {
   }
 
   @Patch('contracts/:contractId/status')
+  @UseGuards(SubscriptionFeatureGuard)
+  @RequiresSubscriptionFeature('PROFESSIONAL_FINANCE')
   setContractStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('contractId', ParseUUIDPipe) contractId: string,
@@ -49,6 +55,8 @@ export class ProfessionalFinanceController {
   }
 
   @Post('contracts/:contractId/settlements')
+  @UseGuards(SubscriptionFeatureGuard)
+  @RequiresSubscriptionFeature('PROFESSIONAL_FINANCE')
   createSettlement(
     @CurrentUser() user: AuthenticatedUser,
     @Param('contractId', ParseUUIDPipe) contractId: string,
@@ -58,6 +66,8 @@ export class ProfessionalFinanceController {
   }
 
   @Patch('settlements/:settlementId/pay')
+  @UseGuards(SubscriptionFeatureGuard)
+  @RequiresSubscriptionFeature('PROFESSIONAL_FINANCE')
   markPaid(
     @CurrentUser() user: AuthenticatedUser,
     @Param('settlementId', ParseUUIDPipe) settlementId: string,

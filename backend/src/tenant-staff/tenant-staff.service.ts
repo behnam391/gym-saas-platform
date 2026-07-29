@@ -13,6 +13,7 @@ import {
   CreateTenantStaffDto,
   SetTenantStaffAccessDto,
 } from './dto/tenant-staff.dto';
+import { SubscriptionAccessService } from '../subscriptions/subscription-access.service';
 
 const STAFF_ROLES = ['RECEPTION', 'BUFFET_STAFF', 'TRAINER', 'NUTRITIONIST'] as const;
 
@@ -21,6 +22,7 @@ export class TenantStaffService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly subscriptionAccess: SubscriptionAccessService,
   ) {}
 
   list() {
@@ -61,6 +63,12 @@ export class TenantStaffService {
     }
 
     const tenantId = this.tenantContext.requireTenantId();
+    const currentStaffCount = await this.prisma.forTenant((tx) =>
+      tx.user.count({
+        where: { role: { in: [...STAFF_ROLES] }, isActive: true },
+      }),
+    );
+    await this.subscriptionAccess.assertCapacity('staff', currentStaffCount);
     const temporaryPassword = `Gy!${randomBytes(7).toString('base64url')}`;
     const passwordHash = await bcrypt.hash(temporaryPassword, 12);
     const specialties = dto.specialties?.map((item) => item.trim()).filter(Boolean) ?? [];

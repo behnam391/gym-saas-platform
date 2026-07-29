@@ -5,6 +5,8 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { AdvertisementsService } from './advertisements.service';
 import { AdvertisementQueryDto, CreateAdvertisementDto, ReviewAdvertisementDto } from './dto/advertisement.dto';
+import { SubscriptionFeatureGuard } from '../subscriptions/subscription-feature.guard';
+import { RequiresSubscriptionFeature } from '../subscriptions/requires-subscription-feature.decorator';
 
 @Controller('advertisements')
 export class AdvertisementsController {
@@ -19,8 +21,9 @@ export class AdvertisementsController {
   listMine() { return this.service.listMine(); }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionFeatureGuard)
   @Roles('GYM_OWNER')
+  @RequiresSubscriptionFeature('ADVERTISEMENTS')
   create(@Body() dto: CreateAdvertisementDto) { return this.service.create(dto); }
 
   @Get('admin')

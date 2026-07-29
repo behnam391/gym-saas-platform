@@ -6,6 +6,7 @@ import { TenantContext } from '../common/tenant-context';
 import { FinanceDashboardQueryDto, RecordManualPaymentDto } from './dto/payment.dto';
 import { StartPlatformSubscriptionPaymentDto } from './dto/payment.dto';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { SubscriptionAccessService } from '../subscriptions/subscription-access.service';
 import { ZarinpalService } from './zarinpal.service';
 import { NOTIFICATION_QUEUE } from '../queue/queue.module';
 import { NotificationJobData } from '../queue/notification.processor';
@@ -18,11 +19,13 @@ export class PaymentsService {
     private readonly zarinpal: ZarinpalService,
     @InjectQueue(NOTIFICATION_QUEUE)
     private readonly notificationQueue: Queue<NotificationJobData>,
+    private readonly subscriptionAccess: SubscriptionAccessService,
   ) {}
 
   async platformSubscriptionOverview() {
     const tenantId = this.tenantContext.requireTenantId();
-    return this.prisma.forTenant(async (tx) => {
+    const [data, access] = await Promise.all([
+      this.prisma.forTenant(async (tx) => {
       const [plans, subscription, payments] = await Promise.all([
         tx.subscriptionPlan.findMany({
           where: { isActive: true },
@@ -40,7 +43,16 @@ export class PaymentsService {
         }),
       ]);
       return { plans, subscription, payments };
-    });
+      }),
+      this.subscriptionAccess.getCurrentAccess(),
+    ]);
+    return {
+      ...data,
+      subscription: data.subscription
+        ? { ...data.subscription, status: access.status }
+        : null,
+      access,
+    };
   }
 
   async startPlatformSubscriptionPayment(

@@ -41,6 +41,15 @@ export interface PlatformSubscriptionData {
   plans: SubscriptionPlan[];
   subscription?: TenantSubscription | null;
   payments: SubscriptionPayment[];
+  access: {
+    status: string;
+    planCode?: string | null;
+    planName?: string | null;
+    renewsAt?: string | null;
+    isOperational: boolean;
+    features: string[];
+    limits: { staff: number; members: number; devices: number };
+  };
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -89,6 +98,13 @@ export function PlatformSubscriptionPanel({
         </p>
       </header>
 
+      {!initial.access.isOperational && (
+        <div className="rounded-2xl border border-danger/25 bg-danger/10 p-4 text-sm leading-7 text-danger">
+          اشتراک باشگاه فعال نیست. اطلاعات و سوابق قبلی حفظ شده‌اند، اما ایجاد
+          تبلیغ، اتصال دستگاه جدید و ثبت قرارداد مالی تا زمان تمدید محدود است.
+        </div>
+      )}
+
       <MembershipCard className="border-accent/25 bg-accent/5">
         <div className="flex flex-wrap items-center gap-4">
           <span className="grid size-12 place-items-center rounded-2xl bg-accent/15 text-accent-soft">
@@ -113,6 +129,28 @@ export function PlatformSubscriptionPanel({
               {STATUS_LABELS[current.status] ?? current.status}
             </Badge>
           )}
+        </div>
+        <div className="mt-5 grid gap-3 border-t border-border/10 pt-5 text-sm sm:grid-cols-3">
+          <div>
+            <span className="text-muted">ظرفیت اعضا</span>
+            <strong className="mt-1 block">
+              {initial.access.limits.members.toLocaleString('fa-IR')} نفر
+            </strong>
+          </div>
+          <div>
+            <span className="text-muted">ظرفیت پرسنل</span>
+            <strong className="mt-1 block">
+              {initial.access.limits.staff.toLocaleString('fa-IR')} حساب
+            </strong>
+          </div>
+          <div>
+            <span className="text-muted">دستگاه تردد</span>
+            <strong className="mt-1 block">
+              {initial.access.limits.devices > 0
+                ? `${initial.access.limits.devices.toLocaleString('fa-IR')} دستگاه`
+                : 'در این پلن فعال نیست'}
+            </strong>
+          </div>
         </div>
       </MembershipCard>
 

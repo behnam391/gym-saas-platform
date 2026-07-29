@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant-context';
 import { ZarinpalService } from '../zarinpal.service';
 import { Queue } from 'bullmq';
+import { SubscriptionAccessService } from '../../subscriptions/subscription-access.service';
 
 function createService(
   tx: any,
@@ -25,7 +26,16 @@ function createService(
     ...zarinpalOverrides,
   } as unknown as ZarinpalService;
   const queue = { add: jest.fn() } as unknown as Queue;
-  return new PaymentsService(prisma, context, zarinpal, queue);
+  const subscriptionAccess = {
+    getCurrentAccess: jest.fn().mockResolvedValue({
+      status: 'ACTIVE',
+      planCode: 'GROWTH',
+      isOperational: true,
+      features: [],
+      limits: { staff: 15, members: 2000, devices: 5 },
+    }),
+  } as unknown as SubscriptionAccessService;
+  return new PaymentsService(prisma, context, zarinpal, queue, subscriptionAccess);
 }
 
 describe('PaymentsService.recordManualPayment', () => {

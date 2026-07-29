@@ -9,7 +9,12 @@ describe('TenantStaffService', () => {
     forTenant: jest.fn(),
   };
   const tenantContext = { requireTenantId: () => 'tenant-1' };
-  const service = new TenantStaffService(prisma as never, tenantContext as never);
+  const subscriptionAccess = { assertCapacity: jest.fn() };
+  const service = new TenantStaffService(
+    prisma as never,
+    tenantContext as never,
+    subscriptionAccess as never,
+  );
 
   beforeEach(() => jest.clearAllMocks());
 

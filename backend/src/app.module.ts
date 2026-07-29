@@ -33,6 +33,7 @@ import { SiteContentModule } from './site-content/site-content.module';
 import { ProfessionalFinanceModule } from './professional-finance/professional-finance.module';
 import { HealthController } from './health.controller';
 import { PlatformIntegrationsRuntimeModule } from './integrations/platform-integrations-runtime.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PlatformIntegrationsRuntimeModule } from './integrations/platform-integ
     JwtModule.register({}),
     PrismaModule,
     PlatformIntegrationsRuntimeModule,
+    SubscriptionsModule,
     AuthModule,
     AttendanceModule,
     TrainersModule,

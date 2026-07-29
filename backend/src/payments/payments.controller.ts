@@ -9,6 +9,8 @@ import {
   RecordManualPaymentDto,
   StartPlatformSubscriptionPaymentDto,
 } from './dto/payment.dto';
+import { SubscriptionFeatureGuard } from '../subscriptions/subscription-feature.guard';
+import { RequiresSubscriptionFeature } from '../subscriptions/requires-subscription-feature.decorator';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,7 +60,9 @@ export class PaymentsController {
   }
 
   @Get('dashboard')
+  @UseGuards(SubscriptionFeatureGuard)
   @Roles('GYM_OWNER')
+  @RequiresSubscriptionFeature('FINANCE_REPORTS')
   dashboard(@Query() query: FinanceDashboardQueryDto) {
     return this.payments.dashboard(query);
   }
