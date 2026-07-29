@@ -53,3 +53,65 @@ describe('PaymentsService.recordManualPayment', () => {
   });
 });
 
+describe('PaymentsService.dashboard', () => {
+  it('rejects an invalid date range before querying the database', async () => {
+    const tx = {};
+    const service = createService(tx);
+
+    await expect(
+      service.dashboard({
+        from: '2026-08-01T00:00:00.000Z',
+        to: '2026-07-01T00:00:00.000Z',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('separates membership, cafeteria, and other successful revenue', async () => {
+    const transactions = [
+      { id: 'payment-1', amount: 100, status: 'SUCCEEDED', method: 'POS', membershipId: 'membership-1', orderId: null },
+      { id: 'payment-2', amount: 50, status: 'SUCCEEDED', method: 'CASH', membershipId: null, orderId: 'order-1' },
+      { id: 'payment-3', amount: 25, status: 'SUCCEEDED', method: 'CASH', membershipId: null, orderId: null },
+      { id: 'payment-4', amount: 10, status: 'PENDING', method: 'POS', membershipId: null, orderId: null },
+    ];
+    const tx = {
+      payment: {
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce(transactions)
+          .mockResolvedValueOnce([]),
+      },
+      membership: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      order: {
+        aggregate: jest.fn().mockResolvedValue({
+          _count: 0,
+          _sum: { totalAmount: null },
+        }),
+      },
+    };
+    const service = createService(tx);
+
+    const result = await service.dashboard({
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-08-01T00:00:00.000Z',
+    });
+
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        collected: 175,
+        membershipRevenue: 100,
+        cafeteriaRevenue: 50,
+        otherRevenue: 25,
+        pendingAmount: 10,
+      }),
+    );
+    expect(result.methodBreakdown).toEqual(
+      expect.arrayContaining([
+        { method: 'POS', amount: 100, count: 1 },
+        { method: 'CASH', amount: 75, count: 2 },
+      ]),
+    );
+  });
+});

@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
-import { RecordManualPaymentDto } from './dto/payment.dto';
+import { FinanceDashboardQueryDto, RecordManualPaymentDto } from './dto/payment.dto';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,16 +23,21 @@ export class PaymentsController {
     return this.payments.listMine(user.userId);
   }
 
-  @Get()
-  @Roles('GYM_OWNER', 'RECEPTION')
-  listForTenant() {
-    return this.payments.listForTenant();
-  }
-
   @Get('summary')
   @Roles('GYM_OWNER')
   summary() {
     return this.payments.summary();
   }
-}
 
+  @Get('dashboard')
+  @Roles('GYM_OWNER')
+  dashboard(@Query() query: FinanceDashboardQueryDto) {
+    return this.payments.dashboard(query);
+  }
+
+  @Get()
+  @Roles('GYM_OWNER', 'RECEPTION')
+  listForTenant() {
+    return this.payments.listForTenant();
+  }
+}
