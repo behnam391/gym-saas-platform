@@ -20,6 +20,7 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const passwordChanged = searchParams.get('passwordChanged') === '1';
   const showDemo = process.env.NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS === 'true' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
   async function submit(event: React.FormEvent) {
@@ -81,6 +82,11 @@ export function PortalLoginForm({ portal }: { portal: LoginPortalKey }) {
             <p className="mt-2 text-sm leading-6 text-muted">{config.subtitle}</p>
           </div>
           <form onSubmit={submit} className="flex flex-col gap-4 p-6 sm:p-8">
+            {passwordChanged && (
+              <p className="rounded-xl bg-success/10 px-3 py-2 text-sm text-success">
+                رمز عبور با موفقیت تغییر کرد. اکنون با رمز جدید وارد شوید.
+              </p>
+            )}
             <Input label="شماره موبایل یا کد ملی" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required />
             <Input label="رمز عبور" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
             {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}

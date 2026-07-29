@@ -9,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto, LoginDto } from './dto/login.dto';
 import { isMinor as checkIsMinor } from '../common/age.util';
 
 @Injectable()
@@ -186,6 +186,53 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return { message: 'خروج با موفقیت انجام شد.' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const db = this.prisma.forPlatform();
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true, isActive: true },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('حساب کاربری فعال نیست.');
+    }
+
+    const currentPasswordIsValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!currentPasswordIsValid) {
+      throw new UnauthorizedException('رمز عبور فعلی صحیح نیست.');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('رمز عبور جدید باید با رمز فعلی متفاوت باشد.');
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 12);
+    await db.$transaction(async (tx) => {
+      const changed = await tx.user.updateMany({
+        where: { id: user.id, passwordHash: user.passwordHash, isActive: true },
+        data: { passwordHash: newPasswordHash },
+      });
+      if (changed.count !== 1) {
+        throw new UnauthorizedException(
+          'اطلاعات حساب تغییر کرده است؛ دوباره وارد شوید.',
+        );
+      }
+
+      await tx.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+
+    return {
+      message: 'رمز عبور تغییر کرد. برای امنیت، همه نشست‌ها بسته شدند.',
+      reauthenticationRequired: true,
+    };
   }
 
   private async issueTokens(

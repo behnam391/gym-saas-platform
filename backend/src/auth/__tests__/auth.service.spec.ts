@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, UnauthorizedException } from '@
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GenderDto } from '../dto/register.dto';
+import * as bcrypt from 'bcrypt';
 
 function makeService(db: any) {
   const prisma = { forPlatform: () => db } as unknown as PrismaService;
@@ -204,5 +205,93 @@ describe('AuthService.login', () => {
       },
     });
     expect(db.refreshToken.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('AuthService.changePassword', () => {
+  it('rejects an incorrect current password without changing sessions', async () => {
+    const db = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          passwordHash: await bcrypt.hash('CurrentPass123', 4),
+          isActive: true,
+        }),
+        updateMany: jest.fn(),
+      },
+      refreshToken: { updateMany: jest.fn() },
+      $transaction: jest.fn(),
+    };
+    const service = makeService(db);
+
+    await expect(
+      service.changePassword('user-1', {
+        currentPassword: 'WrongPass123',
+        newPassword: 'NewSecurePass456',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(db.refreshToken.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('hashes the new password and revokes every active refresh token', async () => {
+    const currentHash = await bcrypt.hash('CurrentPass123', 4);
+    const db: any = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          passwordHash: currentHash,
+          isActive: true,
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      refreshToken: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+      $transaction: jest.fn(),
+    };
+    db.$transaction.mockImplementation((callback: (tx: any) => unknown) =>
+      callback(db),
+    );
+    const service = makeService(db);
+
+    const result = await service.changePassword('user-1', {
+      currentPassword: 'CurrentPass123',
+      newPassword: 'NewSecurePass456',
+    });
+
+    const passwordUpdate = db.user.updateMany.mock.calls[0][0];
+    expect(passwordUpdate.data.passwordHash).not.toBe('NewSecurePass456');
+    await expect(
+      bcrypt.compare('NewSecurePass456', passwordUpdate.data.passwordHash),
+    ).resolves.toBe(true);
+    expect(db.refreshToken.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(result.reauthenticationRequired).toBe(true);
+  });
+
+  it('does not allow reusing the current password', async () => {
+    const db = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          passwordHash: await bcrypt.hash('SamePassword123', 4),
+          isActive: true,
+        }),
+        updateMany: jest.fn(),
+      },
+      refreshToken: { updateMany: jest.fn() },
+      $transaction: jest.fn(),
+    };
+    const service = makeService(db);
+
+    await expect(
+      service.changePassword('user-1', {
+        currentPassword: 'SamePassword123',
+        newPassword: 'SamePassword123',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(db.$transaction).not.toHaveBeenCalled();
   });
 });

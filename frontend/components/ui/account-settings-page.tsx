@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { api } from '../../lib/api';
 import { BasicProfile, ProfileManager } from './profile-manager';
 import { FinancialAccountsPanel } from './financial-accounts-panel';
+import { AccountSecurityPanel } from './account-security-panel';
 
 async function loadProfile() {
   const token = (await cookies()).get('accessToken')?.value;
@@ -15,7 +16,7 @@ async function loadAccounts() {
 
 export async function AccountProfilePage({ title = 'پروفایل من' }: { title?: string }) {
   const profile = await loadProfile();
-  return <div className="flex flex-col gap-6"><header><h1 className="text-2xl font-extrabold">{title}</h1><p className="text-muted">اطلاعات هویتی و تصویر نمایشی حساب شما</p></header><ProfileManager initial={profile} /></div>;
+  return <div className="flex flex-col gap-6"><header><h1 className="text-2xl font-extrabold">{title}</h1><p className="text-muted">اطلاعات هویتی، تصویر نمایشی و امنیت حساب شما</p></header><ProfileManager initial={profile} /><AccountSecurityPanel role={profile.role} /></div>;
 }
 
 export async function BankingPage({ scopes }: { scopes: string[] }) {
