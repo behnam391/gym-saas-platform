@@ -79,6 +79,10 @@ services:
       S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
       CORS_ORIGIN: https://${DOMAIN:-gordyar.ir}
       PUBLIC_API_ORIGIN: https://${API_DOMAIN:-api.gordyar.ir}
+      APP_WEB_ORIGIN: ${APP_WEB_ORIGIN:-https://app.gordyar.ir}
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      ZARINPAL_CALLBACK_URL: ${ZARINPAL_CALLBACK_URL:-https://app-api.gordyar.ir/api/v1/payments/zarinpal/callback}
       LOCAL_UPLOADS_ENABLED: ${LOCAL_UPLOADS_ENABLED:-true}
       PORT: 3000
       NODE_ENV: production
@@ -107,7 +111,10 @@ services:
       redis: { condition: service_healthy }
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      SMS_PROVIDER_API_KEY: ${SMS_PROVIDER_API_KEY:-}
+      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:-}
+      KAVENEGAR_SENDER: ${KAVENEGAR_SENDER:-}
+      KAVENEGAR_ALLOWED_RECIPIENTS: ${KAVENEGAR_ALLOWED_RECIPIENTS:-}
+      KAVENEGAR_DRY_RUN: ${KAVENEGAR_DRY_RUN:-true}
       SMTP_HOST: ${SMTP_HOST:-}
       NODE_ENV: production
     healthcheck:

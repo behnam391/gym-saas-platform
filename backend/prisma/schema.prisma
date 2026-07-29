@@ -763,6 +763,8 @@ model Payment {
   method     PaymentMethod
   status     PaymentStatus @default(PENDING)
   gatewayRef String?
+  gatewayAuthority String? @unique
+  gatewayCardPan   String?
   paidAt     DateTime?
   createdAt  DateTime      @default(now())
 

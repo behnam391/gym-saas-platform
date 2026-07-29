@@ -2,11 +2,23 @@ import { BadRequestException } from '@nestjs/common';
 import { PaymentsService } from '../payments.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant-context';
+import { ZarinpalService } from '../zarinpal.service';
+import { Queue } from 'bullmq';
 
-function createService(tx: any) {
+function createService(
+  tx: any,
+  zarinpalOverrides: Partial<ZarinpalService> = {},
+) {
   const prisma = { forTenant: jest.fn((fn: any) => fn(tx)) } as unknown as PrismaService;
   const context = { requireTenantId: () => 'tenant-1' } as unknown as TenantContext;
-  return new PaymentsService(prisma, context);
+  const zarinpal = {
+    requestPayment: jest.fn(),
+    getRedirectUrl: jest.fn(),
+    verifyPayment: jest.fn(),
+    ...zarinpalOverrides,
+  } as unknown as ZarinpalService;
+  const queue = { add: jest.fn() } as unknown as Queue;
+  return new PaymentsService(prisma, context, zarinpal, queue);
 }
 
 describe('PaymentsService.recordManualPayment', () => {
@@ -50,6 +62,49 @@ describe('PaymentsService.recordManualPayment', () => {
       where: { id: 'membership-1' },
       data: expect.objectContaining({ status: 'ACTIVE' }),
     }));
+  });
+});
+
+describe('PaymentsService.startZarinpalPayment', () => {
+  it('uses the trusted membership price instead of a client supplied amount', async () => {
+    process.env.ZARINPAL_CALLBACK_URL =
+      'https://api.example.test/api/v1/payments/zarinpal/callback';
+    const membership = {
+      id: 'membership-1',
+      tenantId: 'tenant-1',
+      userId: 'user-1',
+      status: 'PENDING_PAYMENT',
+      plan: { title: 'پلن ماهانه', price: 850000, durationDays: 30 },
+      tenant: { name: 'باشگاه نمونه' },
+      user: {
+        mobile: '09120000000',
+        insuranceDocs: [{ id: 'insurance-1', validUntil: null }],
+      },
+      payments: [],
+    };
+    const tx = {
+      membership: { findFirst: jest.fn().mockResolvedValue(membership) },
+      payment: {
+        create: jest.fn().mockResolvedValue({ id: 'payment-1' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const requestPayment = jest.fn().mockResolvedValue({
+      authority: 'A000000000000000000000000000000000001',
+      redirectUrl: 'https://payment.zarinpal.com/pg/StartPay/example',
+    });
+    const service = createService(tx, { requestPayment } as Partial<ZarinpalService>);
+
+    const result = await service.startZarinpalPayment('membership-1', 'user-1');
+
+    expect(tx.payment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amount: 850000, status: 'PENDING' }),
+    });
+    expect(requestPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amountToman: 850000, mobile: '09120000000' }),
+    );
+    expect(result.redirectUrl).toContain('payment.zarinpal.com');
+    delete process.env.ZARINPAL_CALLBACK_URL;
   });
 });
 

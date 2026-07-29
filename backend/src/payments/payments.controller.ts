@@ -17,6 +17,15 @@ export class PaymentsController {
     return this.payments.recordManualPayment(membershipId, dto);
   }
 
+  @Post('memberships/:membershipId/zarinpal')
+  @Roles('ATHLETE')
+  startZarinpal(
+    @Param('membershipId') membershipId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.payments.startZarinpalPayment(membershipId, user.userId);
+  }
+
   @Get('mine')
   @Roles('ATHLETE')
   listMine(@CurrentUser() user: AuthenticatedUser) {
