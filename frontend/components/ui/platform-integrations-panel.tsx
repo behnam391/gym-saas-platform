@@ -274,12 +274,16 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
             <Input
               label="شماره‌های مجاز دریافت پیامک"
               dir="ltr"
-              placeholder="09123456789"
+              placeholder="09123456789 یا * برای همه"
               value={smsForm.allowedRecipients}
               onChange={(event) =>
                 setSmsForm({ ...smsForm, allowedRecipients: event.target.value })
               }
             />
+            <p className="-mt-2 text-xs leading-5 text-muted">
+              تا پایان احراز کاوه‌نگار فقط شماره آزمایشی خودتان را نگه دارید؛
+              برای آغاز ثبت‌نام عمومی مقدار این بخش را روی * قرار دهید.
+            </p>
             <label className="flex items-center justify-between rounded-xl border border-border/10 bg-surface-raised p-3 text-sm">
               <span>فقط شبیه‌سازی؛ پیام واقعی ارسال نشود</span>
               <input

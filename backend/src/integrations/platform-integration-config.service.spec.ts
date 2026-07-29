@@ -8,6 +8,11 @@ describe('PlatformIntegrationConfigService', () => {
     else process.env.PLATFORM_SECRETS_KEY = originalKey;
   });
 
+  it('preserves the wildcard used to enable public SMS delivery', () => {
+    const service = new PlatformIntegrationConfigService({} as never);
+    expect(service.normalizeMobile('*')).toBe('*');
+  });
+
   it('encrypts credentials at rest and can decrypt them again', async () => {
     process.env.PLATFORM_SECRETS_KEY = Buffer.alloc(32, 7).toString('base64');
     let encryptedConfig: string | null = null;

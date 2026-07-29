@@ -49,8 +49,9 @@ export class SaveIntegrationCredentialsDto {
   otpTemplate?: string;
 
   @IsOptional()
-  @Matches(/^(09\d{9})(\s*,\s*09\d{9})*$/, {
-    message: 'شماره‌های مجاز باید با ۰۹ شروع شوند و با ویرگول جدا شوند.',
+  @Matches(/^(\*|(09\d{9})(\s*,\s*09\d{9})*)$/, {
+    message:
+      'شماره‌های مجاز باید با ۰۹ شروع شوند و با ویرگول جدا شوند؛ برای ارسال عمومی از * استفاده کنید.',
   })
   allowedRecipients?: string;
 

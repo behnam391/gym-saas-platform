@@ -90,6 +90,7 @@ export class PlatformIntegrationConfigService {
   }
 
   normalizeMobile(value: string) {
+    if (value.trim() === '*') return '*';
     const digits = value.replace(/\D/g, '');
     if (digits.startsWith('0098')) return `0${digits.slice(4)}`;
     if (digits.startsWith('98')) return `0${digits.slice(2)}`;
