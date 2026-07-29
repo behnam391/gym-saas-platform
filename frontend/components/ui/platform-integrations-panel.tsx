@@ -20,6 +20,7 @@ interface IntegrationSettings {
   sandbox?: boolean;
   callbackUrl?: string;
   sender?: string;
+  otpTemplate?: string;
   allowedRecipients?: string;
   dryRun?: boolean;
 }
@@ -64,6 +65,7 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
   const [smsForm, setSmsForm] = useState({
     apiKey: '',
     sender: sms?.settings?.sender ?? '',
+    otpTemplate: sms?.settings?.otpTemplate ?? '',
     allowedRecipients: sms?.settings?.allowedRecipients ?? '',
     dryRun: sms?.settings?.dryRun ?? true,
   });
@@ -83,6 +85,7 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
           : {
               ...(smsForm.apiKey ? { apiKey: smsForm.apiKey } : {}),
               sender: smsForm.sender,
+              otpTemplate: smsForm.otpTemplate,
               allowedRecipients: smsForm.allowedRecipients,
               dryRun: smsForm.dryRun,
             };
@@ -252,6 +255,22 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
               value={smsForm.sender}
               onChange={(event) => setSmsForm({ ...smsForm, sender: event.target.value })}
             />
+            <Input
+              label="نام قالب کد تأیید کاوه‌نگار (اختیاری)"
+              dir="ltr"
+              placeholder="مثلاً gordyarverify"
+              value={smsForm.otpTemplate}
+              onChange={(event) =>
+                setSmsForm({
+                  ...smsForm,
+                  otpTemplate: event.target.value.trim(),
+                })
+              }
+            />
+            <p className="-mt-2 text-xs leading-5 text-muted">
+              اگر قالب ثبت شود، کدهای ورود و ثبت‌نام با سرویس VerifyLookup
+              ارسال می‌شوند؛ در غیر این صورت ارسال عادی استفاده خواهد شد.
+            </p>
             <Input
               label="شماره‌های مجاز دریافت پیامک"
               dir="ltr"

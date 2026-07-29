@@ -42,6 +42,13 @@ export class SaveIntegrationCredentialsDto {
   sender?: string;
 
   @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]+$/, {
+    message: 'نام قالب OTP فقط می‌تواند شامل حروف انگلیسی، عدد، خط تیره و زیرخط باشد.',
+  })
+  otpTemplate?: string;
+
+  @IsOptional()
   @Matches(/^(09\d{9})(\s*,\s*09\d{9})*$/, {
     message: 'شماره‌های مجاز باید با ۰۹ شروع شوند و با ویرگول جدا شوند.',
   })

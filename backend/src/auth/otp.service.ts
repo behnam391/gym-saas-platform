@@ -90,6 +90,7 @@ export class OtpService {
           ? await this.provider.sendSms({
               to: destination,
               text: `کد تأیید گُردیار: ${code}\nاین کد تا ۵ دقیقه معتبر است.`,
+              verification: { token: code },
             })
           : await this.provider.sendEmail({
               to: destination,

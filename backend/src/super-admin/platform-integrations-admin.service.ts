@@ -66,6 +66,7 @@ export class PlatformIntegrationsAdminService {
               ? {
                   apiKeyHint: this.mask(stored.apiKey),
                   sender: stored.sender ?? '',
+                  otpTemplate: stored.otpTemplate ?? '',
                   allowedRecipients: stored.allowedRecipients.join(','),
                   dryRun: stored.dryRun,
                 }
@@ -123,16 +124,29 @@ export class PlatformIntegrationsAdminService {
         {
           apiKey,
           sender: dto.sender?.trim() || previous?.sender || undefined,
+          otpTemplate:
+            dto.otpTemplate?.trim() || previous?.otpTemplate || undefined,
           allowedRecipients,
           dryRun: dto.dryRun ?? previous?.dryRun ?? true,
         },
-        ['apiKey', 'allowedRecipients', 'dryRun', ...(dto.sender || previous?.sender ? ['sender'] : [])],
+        [
+          'apiKey',
+          'allowedRecipients',
+          'dryRun',
+          ...(dto.sender || previous?.sender ? ['sender'] : []),
+          ...(dto.otpTemplate || previous?.otpTemplate
+            ? ['otpTemplate']
+            : []),
+        ],
       );
       configuredFields = [
         'apiKey',
         'allowedRecipients',
         'dryRun',
         ...(dto.sender || previous?.sender ? ['sender'] : []),
+        ...(dto.otpTemplate || previous?.otpTemplate
+          ? ['otpTemplate']
+          : []),
       ];
     } else {
       throw new BadRequestException('ثبت کلید برای این اتصال هنوز پیاده‌سازی نشده است.');

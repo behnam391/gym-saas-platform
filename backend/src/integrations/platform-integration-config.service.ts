@@ -19,6 +19,7 @@ export interface PaymentGatewayConfig {
 export interface SmsGatewayConfig {
   apiKey: string;
   sender?: string;
+  otpTemplate?: string;
   allowedRecipients: string[];
   dryRun: boolean;
 }
@@ -53,6 +54,7 @@ export class PlatformIntegrationConfigService {
     return {
       apiKey,
       sender: process.env.KAVENEGAR_SENDER?.trim() || undefined,
+      otpTemplate: process.env.KAVENEGAR_OTP_TEMPLATE?.trim() || undefined,
       allowedRecipients: (process.env.KAVENEGAR_ALLOWED_RECIPIENTS ?? '')
         .split(',')
         .map((value) => this.normalizeMobile(value))

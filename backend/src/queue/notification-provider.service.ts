@@ -1,10 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { KavenegarApi } from 'kavenegar';
 import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 
 export interface SendSmsInput {
   to: string;
   text: string;
+  verification?: {
+    token: string;
+  };
 }
 
 export interface SendEmailInput {
@@ -44,30 +48,28 @@ export class NotificationProviderService {
       return 'BLOCKED';
     }
 
-    const body = new URLSearchParams({
-      receptor: recipient,
-      message: input.text,
-    });
-    const sender = config?.sender?.trim();
-    if (sender) body.set('sender', sender);
-
-    const response = await fetch(
-      `https://api.kavenegar.com/v1/${encodeURIComponent(apiKey)}/sms/send.json`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-        signal: AbortSignal.timeout(15_000),
-      },
-    );
-    const result = (await response.json().catch(() => null)) as
-      | { return?: { status?: number; message?: string } }
-      | null;
-    if (!response.ok || result?.return?.status !== 200) {
-      throw new Error(
-        `Kavenegar rejected SMS (${result?.return?.status ?? response.status}): ${result?.return?.message ?? 'unknown error'}`,
+    const api = KavenegarApi({ apikey: apiKey });
+    await this.callKavenegar((done) => {
+      if (input.verification && config?.otpTemplate?.trim()) {
+        api.VerifyLookup(
+          {
+            receptor: recipient,
+            token: input.verification.token,
+            template: config.otpTemplate.trim(),
+          },
+          done,
+        );
+        return;
+      }
+      api.Send(
+        {
+          receptor: recipient,
+          message: input.text,
+          ...(config?.sender?.trim() ? { sender: config.sender.trim() } : {}),
+        },
+        done,
       );
-    }
+    });
     return 'SENT';
   }
 
@@ -108,5 +110,33 @@ export class NotificationProviderService {
   private maskMobile(value: string) {
     if (value.length < 7) return '***';
     return `${value.slice(0, 4)}***${value.slice(-4)}`;
+  }
+
+  private callKavenegar(
+    invoke: (
+      callback: (response: unknown, status?: number, message?: string) => void,
+    ) => void,
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        settled = true;
+        reject(new Error('Kavenegar request timed out.'));
+      }, 15_000);
+      invoke((_response, status, message) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (status === 200) {
+          resolve();
+          return;
+        }
+        reject(
+          new Error(
+            `Kavenegar rejected SMS (${status ?? 'network'}): ${message ?? 'unknown error'}`,
+          ),
+        );
+      });
+    });
   }
 }
