@@ -119,17 +119,27 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
     setErrors((current) => ({ ...current, [key]: '' }));
     setMessages((current) => ({ ...current, [key]: '' }));
     try {
-      await api.post(`/super-admin/integrations/${key}/test`);
+      const result = await api.post<{
+        healthy: boolean;
+        limited?: boolean;
+        message?: string;
+      }>(`/super-admin/integrations/${key}/test`);
       setItems((current) =>
         current.map((item) =>
           item.key === key
-            ? { ...item, status: 'HEALTHY', lastCheckedAt: new Date().toISOString() }
+            ? {
+                ...item,
+                status: result.limited ? 'CONFIGURED' : 'HEALTHY',
+                lastCheckedAt: new Date().toISOString(),
+              }
             : item,
         ),
       );
       setMessages((current) => ({
         ...current,
-        [key]: 'اتصال با موفقیت بررسی شد و سالم است.',
+        [key]:
+          result.message ??
+          'اتصال با موفقیت بررسی شد و سالم است.',
       }));
     } catch (caught) {
       setItems((current) =>

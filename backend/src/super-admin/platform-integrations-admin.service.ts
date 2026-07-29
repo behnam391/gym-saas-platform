@@ -169,6 +169,7 @@ export class PlatformIntegrationsAdminService {
     const integration = await db.platformIntegration.findUnique({ where: { key } });
     if (!integration) throw new NotFoundException('اتصال سامانه یافت نشد.');
     try {
+      let limitedMessage: string | null = null;
       if (key === 'PAYMENT_GATEWAY') {
         const config = await this.config.getPaymentGatewayConfig();
         if (!config) throw new BadRequestException('ابتدا اطلاعات زرین‌پال را ثبت کنید.');
@@ -200,30 +201,47 @@ export class PlatformIntegrationsAdminService {
           { signal: AbortSignal.timeout(15_000) },
         );
         const body = (await response.json().catch(() => null)) as
-          | { return?: { status?: number } }
+          | { return?: { status?: number; message?: string } }
           | null;
-        if (!response.ok || body?.return?.status !== 200) throw new Error('unhealthy');
+        if (body?.return?.status === 430) {
+          limitedMessage =
+            'کلید API معتبر است، اما حساب کاوه‌نگار هنوز احراز هویت نشده و فقط دسترسی آزمایشی دارد.';
+        } else if (!response.ok || body?.return?.status !== 200) {
+          throw new Error(
+            body?.return?.message || `Kavenegar status ${body?.return?.status}`,
+          );
+        }
       } else {
         throw new BadRequestException('تست این اتصال هنوز پیاده‌سازی نشده است.');
       }
 
       const checkedAt = new Date();
+      const status = limitedMessage ? 'CONFIGURED' : 'HEALTHY';
       await db.$transaction([
         db.platformIntegration.update({
           where: { key },
-          data: { status: 'HEALTHY', lastCheckedAt: checkedAt },
+          data: { status, lastCheckedAt: checkedAt },
         }),
         db.auditLog.create({
           data: {
             actorId,
-            action: 'PLATFORM_INTEGRATION_TEST_SUCCEEDED',
+            action: limitedMessage
+              ? 'PLATFORM_INTEGRATION_TEST_LIMITED'
+              : 'PLATFORM_INTEGRATION_TEST_SUCCEEDED',
             entityType: 'PlatformIntegration',
             entityId: integration.id,
-            metadata: { key },
+            metadata: { key, limited: Boolean(limitedMessage) },
           },
         }),
       ]);
-      return { healthy: true, checkedAt };
+      return {
+        healthy: !limitedMessage,
+        limited: Boolean(limitedMessage),
+        message:
+          limitedMessage ||
+          'اتصال با موفقیت بررسی شد و سالم است.',
+        checkedAt,
+      };
     } catch (error) {
       await db.platformIntegration.update({
         where: { key },
