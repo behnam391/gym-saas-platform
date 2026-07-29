@@ -74,26 +74,37 @@ export class NotificationProviderService {
   }
 
   async sendEmail(input: SendEmailInput): Promise<DeliveryResult> {
-    if (!process.env.SMTP_HOST) {
+    const config = await this.integrationConfig.getEmailGatewayConfig();
+    const recipient = input.to.trim().toLowerCase();
+    if (!config || config.dryRun) {
       this.logger.warn(`[Email dry-run] to=${input.to} subject=${input.subject}`);
       return 'DRY_RUN';
     }
-    const port = Number(process.env.SMTP_PORT ?? 587);
+    if (
+      !config.allowedRecipients.includes('*') &&
+      !config.allowedRecipients.includes(recipient)
+    ) {
+      this.logger.warn(`[Email blocked: recipient is not allowed] to=${recipient}`);
+      return 'BLOCKED';
+    }
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: process.env.SMTP_SECURE === 'true' || port === 465,
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
       auth:
-        process.env.SMTP_USER && process.env.SMTP_PASSWORD
+        config.username && config.password
           ? {
-              user: process.env.SMTP_USER,
-              pass: process.env.SMTP_PASSWORD,
+              user: config.username,
+              pass: config.password,
             }
           : undefined,
     });
     await transporter.sendMail({
-      from: process.env.SMTP_FROM ?? 'Gordyar <no-reply@gordyar.ir>',
-      to: input.to,
+      from: {
+        name: config.fromName,
+        address: config.fromAddress,
+      },
+      to: recipient,
       subject: input.subject,
       html: input.html,
     });

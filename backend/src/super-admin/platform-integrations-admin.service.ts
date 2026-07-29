@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  EmailGatewayConfig,
   PaymentGatewayConfig,
   PlatformIntegrationConfigService,
   SmsGatewayConfig,
 } from '../integrations/platform-integration-config.service';
 import { SaveIntegrationCredentialsDto } from './dto/super-admin.dto';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class PlatformIntegrationsAdminService {
@@ -67,6 +69,29 @@ export class PlatformIntegrationsAdminService {
                   apiKeyHint: this.mask(stored.apiKey),
                   sender: stored.sender ?? '',
                   otpTemplate: stored.otpTemplate ?? '',
+                  allowedRecipients: stored.allowedRecipients.join(','),
+                  dryRun: stored.dryRun,
+                }
+              : null,
+          };
+        }
+        if (integration.key === 'EMAIL_SMTP') {
+          const stored = await this.config
+            .read<EmailGatewayConfig>(integration.key)
+            .catch(() => null);
+          return {
+            ...integration,
+            settings: stored
+              ? {
+                  host: stored.host,
+                  port: stored.port,
+                  secure: stored.secure,
+                  usernameHint: stored.username
+                    ? this.mask(stored.username)
+                    : '',
+                  passwordConfigured: Boolean(stored.password),
+                  fromAddress: stored.fromAddress,
+                  fromName: stored.fromName,
                   allowedRecipients: stored.allowedRecipients.join(','),
                   dryRun: stored.dryRun,
                 }
@@ -148,6 +173,55 @@ export class PlatformIntegrationsAdminService {
           ? ['otpTemplate']
           : []),
       ];
+    } else if (key === 'EMAIL_SMTP') {
+      const previous = await this.config.read<EmailGatewayConfig>(key);
+      const host = dto.smtpHost?.trim() || previous?.host;
+      const fromAddress =
+        dto.smtpFromAddress?.trim().toLowerCase() || previous?.fromAddress;
+      if (!host || !fromAddress) {
+        throw new BadRequestException(
+          'آدرس سرور SMTP و ایمیل فرستنده الزامی است.',
+        );
+      }
+      const allowedRecipients = this.parseEmailRecipients(
+        dto.emailAllowedRecipients ??
+          previous?.allowedRecipients.join(',') ??
+          '',
+      );
+      if (!allowedRecipients.length) {
+        throw new BadRequestException(
+          'حداقل یک ایمیل مجاز وارد کنید؛ برای ارسال عمومی از * استفاده کنید.',
+        );
+      }
+      const config: EmailGatewayConfig = {
+        host,
+        port: dto.smtpPort ?? previous?.port ?? 587,
+        secure: dto.smtpSecure ?? previous?.secure ?? false,
+        username:
+          dto.smtpUsername?.trim() || previous?.username || undefined,
+        password: dto.smtpPassword || previous?.password || undefined,
+        fromAddress,
+        fromName: dto.smtpFromName?.trim() || previous?.fromName || 'گُردیار',
+        allowedRecipients,
+        dryRun: dto.emailDryRun ?? previous?.dryRun ?? true,
+      };
+      if ((config.username && !config.password) || (!config.username && config.password)) {
+        throw new BadRequestException(
+          'نام کاربری و رمز SMTP باید هر دو وارد شوند.',
+        );
+      }
+      configuredFields = [
+        'host',
+        'port',
+        'secure',
+        'fromAddress',
+        'fromName',
+        'allowedRecipients',
+        'dryRun',
+        ...(config.username ? ['username'] : []),
+        ...(config.password ? ['password'] : []),
+      ];
+      await this.config.save(key, config, configuredFields);
     } else {
       throw new BadRequestException('ثبت کلید برای این اتصال هنوز پیاده‌سازی نشده است.');
     }
@@ -211,6 +285,26 @@ export class PlatformIntegrationsAdminService {
             body?.return?.message || `Kavenegar status ${body?.return?.status}`,
           );
         }
+      } else if (key === 'EMAIL_SMTP') {
+        const config = await this.config.getEmailGatewayConfig();
+        if (!config) {
+          throw new BadRequestException(
+            'ابتدا اطلاعات سرویس ایمیل را ثبت کنید.',
+          );
+        }
+        const transporter = nodemailer.createTransport({
+          host: config.host,
+          port: config.port,
+          secure: config.secure,
+          auth:
+            config.username && config.password
+              ? { user: config.username, pass: config.password }
+              : undefined,
+          connectionTimeout: 15_000,
+          greetingTimeout: 15_000,
+          socketTimeout: 15_000,
+        });
+        await transporter.verify();
       } else {
         throw new BadRequestException('تست این اتصال هنوز پیاده‌سازی نشده است.');
       }
@@ -257,5 +351,25 @@ export class PlatformIntegrationsAdminService {
   private mask(value: string) {
     if (value.length <= 8) return '••••••••';
     return `${value.slice(0, 4)}••••${value.slice(-4)}`;
+  }
+
+  private parseEmailRecipients(value: string) {
+    const recipients = value
+      .split(',')
+      .map((item) => this.config.normalizeEmailRecipient(item))
+      .filter(Boolean);
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (
+      recipients.includes('*') &&
+      (recipients.length !== 1 || recipients[0] !== '*')
+    ) {
+      throw new BadRequestException(
+        'علامت * باید به‌تنهایی برای ارسال عمومی وارد شود.',
+      );
+    }
+    if (recipients.some((item) => item !== '*' && !emailPattern.test(item))) {
+      throw new BadRequestException('فهرست ایمیل‌های مجاز معتبر نیست.');
+    }
+    return [...new Set(recipients)];
   }
 }

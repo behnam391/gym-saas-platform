@@ -1,6 +1,10 @@
 import {
   IsBoolean,
+  IsEmail,
   IsIn,
+  IsInt,
+  Max,
+  Min,
   IsOptional,
   IsString,
   IsUrl,
@@ -66,6 +70,45 @@ export class SaveIntegrationCredentialsDto {
   @IsOptional()
   @IsUrl({ protocols: ['https'], require_protocol: true })
   callbackUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpHost?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  smtpPort?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  smtpSecure?: boolean;
+
+  @IsOptional()
+  @IsString()
+  smtpUsername?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  smtpPassword?: string;
+
+  @IsOptional()
+  @IsEmail()
+  smtpFromAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpFromName?: string;
+
+  @IsOptional()
+  @IsString()
+  emailAllowedRecipients?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  emailDryRun?: boolean;
 }
 
 export class AssignSubscriptionDto {

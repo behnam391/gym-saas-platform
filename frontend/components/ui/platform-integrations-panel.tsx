@@ -23,6 +23,13 @@ interface IntegrationSettings {
   otpTemplate?: string;
   allowedRecipients?: string;
   dryRun?: boolean;
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  usernameHint?: string;
+  passwordConfigured?: boolean;
+  fromAddress?: string;
+  fromName?: string;
 }
 
 interface Integration {
@@ -55,6 +62,7 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const payment = items.find((item) => item.key === 'PAYMENT_GATEWAY');
   const sms = items.find((item) => item.key === 'SMS');
+  const email = items.find((item) => item.key === 'EMAIL_SMTP');
   const [paymentForm, setPaymentForm] = useState({
     merchantId: '',
     callbackUrl:
@@ -69,25 +77,51 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
     allowedRecipients: sms?.settings?.allowedRecipients ?? '',
     dryRun: sms?.settings?.dryRun ?? true,
   });
+  const [emailForm, setEmailForm] = useState({
+    host: email?.settings?.host ?? '',
+    port: email?.settings?.port ?? 587,
+    secure: email?.settings?.secure ?? false,
+    username: '',
+    password: '',
+    fromAddress: email?.settings?.fromAddress ?? 'no-reply@gordyar.ir',
+    fromName: email?.settings?.fromName ?? 'گُردیار',
+    allowedRecipients: email?.settings?.allowedRecipients ?? '',
+    dryRun: email?.settings?.dryRun ?? true,
+  });
 
-  async function save(key: 'PAYMENT_GATEWAY' | 'SMS') {
+  async function save(key: 'PAYMENT_GATEWAY' | 'SMS' | 'EMAIL_SMTP') {
     setBusy(`${key}:save`);
     setErrors((current) => ({ ...current, [key]: '' }));
     setMessages((current) => ({ ...current, [key]: '' }));
     try {
-      const payload =
-        key === 'PAYMENT_GATEWAY'
-          ? {
+      const payload = key === 'PAYMENT_GATEWAY'
+        ? {
               ...(paymentForm.merchantId ? { merchantId: paymentForm.merchantId } : {}),
               callbackUrl: paymentForm.callbackUrl,
               sandbox: paymentForm.sandbox,
-            }
-          : {
+          }
+        : key === 'SMS'
+          ? {
               ...(smsForm.apiKey ? { apiKey: smsForm.apiKey } : {}),
               sender: smsForm.sender,
               otpTemplate: smsForm.otpTemplate,
               allowedRecipients: smsForm.allowedRecipients,
               dryRun: smsForm.dryRun,
+            }
+          : {
+              smtpHost: emailForm.host,
+              smtpPort: emailForm.port,
+              smtpSecure: emailForm.secure,
+              ...(emailForm.username
+                ? { smtpUsername: emailForm.username }
+                : {}),
+              ...(emailForm.password
+                ? { smtpPassword: emailForm.password }
+                : {}),
+              smtpFromAddress: emailForm.fromAddress,
+              smtpFromName: emailForm.fromName,
+              emailAllowedRecipients: emailForm.allowedRecipients,
+              emailDryRun: emailForm.dryRun,
             };
       const changed = await api.patch<Integration[]>(
         `/super-admin/integrations/${key}/credentials`,
@@ -96,8 +130,14 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
       setItems(changed);
       if (key === 'PAYMENT_GATEWAY') {
         setPaymentForm((current) => ({ ...current, merchantId: '' }));
-      } else {
+      } else if (key === 'SMS') {
         setSmsForm((current) => ({ ...current, apiKey: '' }));
+      } else {
+        setEmailForm((current) => ({
+          ...current,
+          username: '',
+          password: '',
+        }));
       }
       setMessages((current) => ({
         ...current,
@@ -114,7 +154,7 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
     }
   }
 
-  async function test(key: 'PAYMENT_GATEWAY' | 'SMS') {
+  async function test(key: 'PAYMENT_GATEWAY' | 'SMS' | 'EMAIL_SMTP') {
     setBusy(`${key}:test`);
     setErrors((current) => ({ ...current, [key]: '' }));
     setMessages((current) => ({ ...current, [key]: '' }));
@@ -325,8 +365,162 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
         </MembershipCard>
       )}
 
+      {email && (
+        <MembershipCard>
+          {header(email, 'SMTP · کد تأیید و اعلان‌های ایمیلی')}
+          <div className="mt-5 grid gap-4">
+            <Input
+              label="آدرس سرور SMTP"
+              dir="ltr"
+              placeholder="smtp.example.com"
+              value={emailForm.host}
+              onChange={(event) =>
+                setEmailForm({ ...emailForm, host: event.target.value.trim() })
+              }
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="پورت SMTP"
+                type="number"
+                dir="ltr"
+                min={1}
+                max={65535}
+                value={String(emailForm.port)}
+                onChange={(event) =>
+                  setEmailForm({
+                    ...emailForm,
+                    port: Number(event.target.value || 587),
+                  })
+                }
+              />
+              <label className="flex items-center justify-between rounded-xl border border-border/10 bg-surface-raised p-3 text-sm">
+                <span>اتصال امن مستقیم SSL</span>
+                <input
+                  type="checkbox"
+                  checked={emailForm.secure}
+                  onChange={(event) =>
+                    setEmailForm({
+                      ...emailForm,
+                      secure: event.target.checked,
+                    })
+                  }
+                  className="size-4 accent-accent"
+                />
+              </label>
+            </div>
+            <Input
+              label="نام کاربری SMTP"
+              dir="ltr"
+              placeholder={
+                email.settings?.usernameHint
+                  ? `ثبت شده: ${email.settings.usernameHint}`
+                  : 'معمولاً آدرس ایمیل'
+              }
+              value={emailForm.username}
+              onChange={(event) =>
+                setEmailForm({ ...emailForm, username: event.target.value })
+              }
+            />
+            <Input
+              label="رمز یا App Password ایمیل"
+              type="password"
+              dir="ltr"
+              placeholder={
+                email.settings?.passwordConfigured
+                  ? 'رمز قبلی حفظ می‌شود'
+                  : 'SMTP Password'
+              }
+              value={emailForm.password}
+              onChange={(event) =>
+                setEmailForm({ ...emailForm, password: event.target.value })
+              }
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="نام فرستنده"
+                value={emailForm.fromName}
+                onChange={(event) =>
+                  setEmailForm({ ...emailForm, fromName: event.target.value })
+                }
+              />
+              <Input
+                label="ایمیل فرستنده"
+                type="email"
+                dir="ltr"
+                value={emailForm.fromAddress}
+                onChange={(event) =>
+                  setEmailForm({
+                    ...emailForm,
+                    fromAddress: event.target.value.trim(),
+                  })
+                }
+              />
+            </div>
+            <Input
+              label="ایمیل‌های مجاز دریافت کد"
+              dir="ltr"
+              placeholder="you@example.com یا * برای همه"
+              value={emailForm.allowedRecipients}
+              onChange={(event) =>
+                setEmailForm({
+                  ...emailForm,
+                  allowedRecipients: event.target.value,
+                })
+              }
+            />
+            <p className="-mt-2 text-xs leading-5 text-muted">
+              ابتدا فقط ایمیل خودتان را ثبت کنید؛ پس از تست موفق برای ارسال
+              عمومی مقدار * را وارد کنید.
+            </p>
+            <label className="flex items-center justify-between rounded-xl border border-border/10 bg-surface-raised p-3 text-sm">
+              <span>فقط شبیه‌سازی؛ ایمیل واقعی ارسال نشود</span>
+              <input
+                type="checkbox"
+                checked={emailForm.dryRun}
+                onChange={(event) =>
+                  setEmailForm({
+                    ...emailForm,
+                    dryRun: event.target.checked,
+                  })
+                }
+                className="size-4 accent-accent"
+              />
+            </label>
+            <SecureHint />
+            <Feedback
+              message={messages.EMAIL_SMTP}
+              error={errors.EMAIL_SMTP}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => save('EMAIL_SMTP')}
+                disabled={busy !== null}
+              >
+                {busy === 'EMAIL_SMTP:save' && (
+                  <LoaderCircle className="size-4 animate-spin" />
+                )}
+                ذخیره امن
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => test('EMAIL_SMTP')}
+                disabled={
+                  busy !== null || email.status === 'NOT_CONFIGURED'
+                }
+              >
+                <TestTube2 className="size-4" />
+                تست اتصال بدون ارسال ایمیل
+              </Button>
+            </div>
+          </div>
+        </MembershipCard>
+      )}
+
       {items
-        .filter((item) => !['PAYMENT_GATEWAY', 'SMS'].includes(item.key))
+        .filter(
+          (item) =>
+            !['PAYMENT_GATEWAY', 'SMS', 'EMAIL_SMTP'].includes(item.key),
+        )
         .map((item) => (
           <MembershipCard key={item.id}>
             {header(item, item.provider || 'ارائه‌دهنده هنوز انتخاب نشده')}

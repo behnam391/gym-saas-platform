@@ -24,7 +24,22 @@ export interface SmsGatewayConfig {
   dryRun: boolean;
 }
 
-type IntegrationConfig = PaymentGatewayConfig | SmsGatewayConfig;
+export interface EmailGatewayConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  username?: string;
+  password?: string;
+  fromAddress: string;
+  fromName: string;
+  allowedRecipients: string[];
+  dryRun: boolean;
+}
+
+type IntegrationConfig =
+  | PaymentGatewayConfig
+  | SmsGatewayConfig
+  | EmailGatewayConfig;
 
 @Injectable()
 export class PlatformIntegrationConfigService {
@@ -63,6 +78,30 @@ export class PlatformIntegrationConfigService {
     };
   }
 
+  async getEmailGatewayConfig(): Promise<EmailGatewayConfig | null> {
+    const stored = await this.read<EmailGatewayConfig>('EMAIL_SMTP');
+    if (stored?.host && stored?.fromAddress) return stored;
+    const host = process.env.SMTP_HOST?.trim();
+    const fromAddress = process.env.SMTP_FROM_ADDRESS?.trim();
+    if (!host || !fromAddress) return null;
+    return {
+      host,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure:
+        process.env.SMTP_SECURE === 'true' ||
+        Number(process.env.SMTP_PORT ?? 587) === 465,
+      username: process.env.SMTP_USER?.trim() || undefined,
+      password: process.env.SMTP_PASSWORD || undefined,
+      fromAddress,
+      fromName: process.env.SMTP_FROM_NAME?.trim() || 'گُردیار',
+      allowedRecipients: (process.env.SMTP_ALLOWED_RECIPIENTS ?? '')
+        .split(',')
+        .map((value) => this.normalizeEmailRecipient(value))
+        .filter(Boolean),
+      dryRun: process.env.SMTP_DRY_RUN !== 'false',
+    };
+  }
+
   async read<T extends IntegrationConfig>(key: string): Promise<T | null> {
     const integration = await this.prisma
       .forPlatform()
@@ -95,6 +134,11 @@ export class PlatformIntegrationConfigService {
     if (digits.startsWith('0098')) return `0${digits.slice(4)}`;
     if (digits.startsWith('98')) return `0${digits.slice(2)}`;
     return digits;
+  }
+
+  normalizeEmailRecipient(value: string) {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '*' ? '*' : normalized;
   }
 
   private encryptionKey() {

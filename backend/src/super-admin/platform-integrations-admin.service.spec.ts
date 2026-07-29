@@ -1,4 +1,9 @@
 import { PlatformIntegrationsAdminService } from './platform-integrations-admin.service';
+import * as nodemailer from 'nodemailer';
+
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(),
+}));
 
 describe('PlatformIntegrationsAdminService', () => {
   afterEach(() => {
@@ -60,5 +65,45 @@ describe('PlatformIntegrationsAdminService', () => {
         metadata: { key: 'SMS', limited: true },
       }),
     });
+  });
+
+  it('verifies SMTP credentials without sending an email', async () => {
+    const db = {
+      platformIntegration: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'email-integration',
+          key: 'EMAIL_SMTP',
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+      $transaction: jest.fn().mockResolvedValue([]),
+    };
+    const config = {
+      getEmailGatewayConfig: jest.fn().mockResolvedValue({
+        host: 'smtp.example.com',
+        port: 587,
+        secure: false,
+        username: 'mailer@example.com',
+        password: 'app-password',
+        fromAddress: 'no-reply@gordyar.ir',
+        fromName: 'گُردیار',
+        allowedRecipients: ['owner@example.com'],
+        dryRun: true,
+      }),
+    };
+    const verify = jest.fn().mockResolvedValue(true);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({ verify });
+    const service = new PlatformIntegrationsAdminService(
+      { forPlatform: () => db } as never,
+      config as never,
+    );
+
+    await expect(
+      service.test('EMAIL_SMTP', 'super-admin-id'),
+    ).resolves.toEqual(
+      expect.objectContaining({ healthy: true, limited: false }),
+    );
+    expect(verify).toHaveBeenCalledTimes(1);
   });
 });
