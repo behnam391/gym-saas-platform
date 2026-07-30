@@ -67,6 +67,7 @@ export function NeshanLocationPicker({
 
     let cancelled = false;
     let map: any;
+    let tileErrors = 0;
     void import('@neshan-maps-platform/mapbox-gl').then((module) => {
       if (cancelled || !containerRef.current) return;
       const nmp = module.default;
@@ -75,7 +76,9 @@ export function NeshanLocationPicker({
           ? [longitude, latitude]
           : TEHRAN;
       map = new nmp.Map({
-        mapType: nmp.Map.mapTypes.neshanVector,
+        // Raster tiles are more tolerant of older mobile GPUs and browsers.
+        // Owners only need a precise basemap here, not vector styling.
+        mapType: nmp.Map.mapTypes.neshanRaster,
         container: containerRef.current,
         zoom: latitude !== null ? 15 : 10,
         pitch: 0,
@@ -99,6 +102,20 @@ export function NeshanLocationPicker({
       map.on('click', (event: any) =>
         selectPoint(event.lngLat.lng, event.lngLat.lat),
       );
+      map.on('error', () => {
+        tileErrors += 1;
+        if (tileErrors >= 3) {
+          setError(
+            'لایه‌های نقشه از نشان دریافت نشد. در تنظیمات Web Key نشان، دامنه app.gordyar.ir را به دامنه‌های مجاز اضافه کنید.',
+          );
+        }
+      });
+      map.on('idle', () => {
+        if (map.areTilesLoaded?.()) {
+          tileErrors = 0;
+          setError(null);
+        }
+      });
       markerRef.current.on('dragend', () => {
         const point = markerRef.current.getLngLat();
         selectPoint(point.lng, point.lat);
