@@ -59,6 +59,10 @@ async function forward(
   if (contentType) headers.set('Content-Type', contentType);
   if (bodyOverride) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  const clientIp =
+    request.headers.get('cf-connecting-ip') ??
+    firstForwardedValue(request.headers.get('x-forwarded-for'));
+  if (clientIp) headers.set('X-Forwarded-For', clientIp);
 
   return fetch(`${API_BASE}${endpoint}`, {
     method: request.method,

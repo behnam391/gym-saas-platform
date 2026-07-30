@@ -28,6 +28,8 @@ interface MarketplaceParams {
   minRating?: string;
   gender?: string;
   facilities?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 interface Advertisement {
