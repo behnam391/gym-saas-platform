@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -288,11 +293,17 @@ export class TenantsService {
     reviewerId: string,
     dto: ReviewParentalConsentDto,
   ) {
-    return this.prisma.forTenant(async (tx) => {
+    const consent = await this.prisma.forTenant(async (tx) => {
       const consent = await tx.parentalConsent.findUnique({ where: { userId: consentUserId } });
       if (!consent) throw new NotFoundException('رضایت‌نامه والدین یافت نشد.');
+      if (consent.status !== 'PENDING') {
+        throw new ConflictException('این رضایت‌نامه قبلاً بررسی شده است.');
+      }
+      if (dto.status === 'REJECTED' && !dto.rejectionReason?.trim()) {
+        throw new BadRequestException('دلیل رد رضایت‌نامه را وارد کنید.');
+      }
 
-      await tx.parentalConsent.update({
+      const updated = await tx.parentalConsent.update({
         where: { userId: consentUserId },
         data: {
           status: dto.status,
@@ -306,7 +317,27 @@ export class TenantsService {
         await tx.user.update({ where: { id: consentUserId }, data: { isRestricted: false } });
       }
 
-      return { message: 'بررسی رضایت‌نامه ثبت شد.' };
+      return updated;
     });
+
+    await this.notifications.create({
+      userId: consent.userId,
+      title:
+        dto.status === 'APPROVED'
+          ? 'رضایت‌نامه والدین تأیید شد'
+          : 'رضایت‌نامه والدین نیاز به اصلاح دارد',
+      body:
+        dto.status === 'APPROVED'
+          ? 'رضایت‌نامه والدین تأیید شد و محدودیت سنی حساب شما برداشته شد.'
+          : dto.rejectionReason ||
+            'رضایت‌نامه رد شد؛ لطفاً اطلاعات ولی و فایل خوانا را دوباره ارسال کنید.',
+      metadata: {
+        type: 'PARENTAL_CONSENT_REVIEW',
+        consentId: consent.id,
+        status: dto.status,
+      },
+    });
+
+    return { message: 'بررسی رضایت‌نامه ثبت شد.', consent };
   }
 }

@@ -25,6 +25,7 @@ import type {
   TrainingProgram,
   UploadResult,
   InsuranceDocument,
+  ParentalConsent,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -129,7 +130,7 @@ export class GordyarApiClient {
   }
 
   uploadFile(
-    purpose: 'PROFILE_IMAGE' | 'INSURANCE_DOCUMENT',
+    purpose: 'PROFILE_IMAGE' | 'INSURANCE_DOCUMENT' | 'PARENTAL_CONSENT',
     file: { uri: string; name: string; type: string },
   ) {
     const form = new FormData();
@@ -203,6 +204,19 @@ export class GordyarApiClient {
     validUntil?: string;
   }) {
     return this.request<InsuranceDocument>('/athletes/me/insurance', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
+  }
+
+  submitParentalConsent(input: {
+    guardianName: string;
+    guardianNationalId: string;
+    guardianMobile: string;
+    documentUrl: string;
+  }) {
+    return this.request<ParentalConsent>('/athletes/me/parental-consent', {
       method: 'POST',
       authenticated: true,
       body: JSON.stringify(input),

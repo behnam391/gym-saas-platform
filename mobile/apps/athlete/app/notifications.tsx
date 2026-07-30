@@ -168,6 +168,7 @@ export default function NotificationsScreen() {
 function iconFor(notification: AppNotification): keyof typeof Ionicons.glyphMap {
   const type = notification.metadata?.type;
   if (type === 'INSURANCE_REVIEW') return 'shield-checkmark-outline';
+  if (type === 'PARENTAL_CONSENT_REVIEW') return 'people-outline';
   if (notification.title.includes('پرداخت')) return 'card-outline';
   if (notification.title.includes('برنامه')) return 'barbell-outline';
   return 'notifications-outline';

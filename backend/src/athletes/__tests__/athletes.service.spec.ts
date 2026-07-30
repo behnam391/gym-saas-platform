@@ -42,4 +42,28 @@ describe('AthletesService', () => {
     ).rejects.toThrow(ConflictException);
     expect(tx.insuranceDocument.create).not.toHaveBeenCalled();
   });
+
+  it('rejects replacing a parental consent while it is pending', async () => {
+    const tx = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          isMinor: true,
+          parentalConsent: { status: 'PENDING' },
+        }),
+      },
+      parentalConsent: { upsert: jest.fn() },
+    };
+    const prisma = { forTenant: jest.fn((fn: any) => fn(tx)) } as unknown as PrismaService;
+    const service = new AthletesService(prisma);
+
+    await expect(
+      service.submitParentalConsent('user-1', {
+        guardianName: 'علی رضایی',
+        guardianNationalId: '0012345678',
+        guardianMobile: '09121234567',
+        documentUrl: 'https://files.test/consent.pdf',
+      }),
+    ).rejects.toThrow(ConflictException);
+    expect(tx.parentalConsent.upsert).not.toHaveBeenCalled();
+  });
 });

@@ -24,6 +24,7 @@ export default function RootLayout() {
         <Stack.Screen name="edit-profile" options={{ title: 'ویرایش پروفایل' }} />
         <Stack.Screen name="payments" options={{ title: 'پرداخت‌ها و رسیدها' }} />
         <Stack.Screen name="insurance" options={{ title: 'بیمه ورزشی' }} />
+        <Stack.Screen name="parental-consent" options={{ title: 'رضایت‌نامه والدین' }} />
         <Stack.Screen name="notifications" options={{ title: 'اعلان‌ها' }} />
       </Stack>
       <StatusBar style="dark" />

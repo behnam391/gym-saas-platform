@@ -7,6 +7,8 @@ import {
   IsString,
   IsUUID,
   IsUrl,
+  Length,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -62,9 +64,16 @@ export class SubmitInsuranceDto {
 }
 
 export class SubmitParentalConsentDto {
-  @IsString() guardianName: string;
-  @IsString() guardianNationalId: string;
-  @IsString() guardianMobile: string;
+  @IsString()
+  @Length(3, 120, { message: 'نام ولی باید بین ۳ تا ۱۲۰ نویسه باشد.' })
+  guardianName: string;
+
+  @Matches(/^\d{10}$/, { message: 'کد ملی ولی باید ۱۰ رقم باشد.' })
+  guardianNationalId: string;
+
+  @Matches(/^09\d{9}$/, { message: 'شماره موبایل ولی معتبر نیست.' })
+  guardianMobile: string;
+
   @IsUrl({ require_tld: false }, { message: 'آدرس فایل رضایت‌نامه معتبر نیست.' }) documentUrl: string;
 }
 

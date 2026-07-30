@@ -282,8 +282,17 @@ export class AthletesService {
 
   submitParentalConsent(userId: string, dto: SubmitParentalConsentDto) {
     return this.prisma.forTenant(async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId }, select: { isMinor: true } });
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { isMinor: true, parentalConsent: { select: { status: true } } },
+      });
       if (!user?.isMinor) throw new BadRequestException('رضایت‌نامه فقط برای کاربران زیر ۱۸ سال لازم است.');
+      if (user.parentalConsent?.status === 'PENDING') {
+        throw new ConflictException('رضایت‌نامه شما در انتظار بررسی باشگاه است.');
+      }
+      if (user.parentalConsent?.status === 'APPROVED') {
+        throw new ConflictException('رضایت‌نامه شما قبلاً تأیید شده است.');
+      }
       return tx.parentalConsent.upsert({
         where: { userId },
         create: { userId, ...dto },

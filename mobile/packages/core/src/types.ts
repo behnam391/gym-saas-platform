@@ -93,6 +93,7 @@ export type AthleteProfileSummary = {
   profileImageUrl?: string | null;
   isMinor: boolean;
   isRestricted: boolean;
+  parentalConsent?: ParentalConsent | null;
   insuranceDocs: InsuranceDocument[];
   memberships: AthleteMembership[];
 };
@@ -295,6 +296,18 @@ export type InsuranceDocument = {
   policyNumber?: string | null;
   validFrom?: string | null;
   validUntil?: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+};
+
+export type ParentalConsent = {
+  id: string;
+  guardianName: string;
+  guardianNationalId: string;
+  guardianMobile: string;
+  documentUrl: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   reviewedAt?: string | null;
   rejectionReason?: string | null;

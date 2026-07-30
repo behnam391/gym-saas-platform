@@ -20,6 +20,7 @@ const accountItems: {
   title: string;
   hint: string;
   href?: Href;
+  minorOnly?: boolean;
 }[] = [
   {
     icon: 'person-outline',
@@ -44,6 +45,13 @@ const accountItems: {
     title: 'بیمه ورزشی و مدارک',
     hint: 'ارسال مدرک و مشاهده نتیجه بررسی',
     href: '/insurance' as Href,
+  },
+  {
+    icon: 'people-outline',
+    title: 'رضایت‌نامه والدین',
+    hint: 'ثبت مشخصات ولی و پیگیری نتیجه بررسی',
+    href: '/parental-consent' as Href,
+    minorOnly: true,
   },
   {
     icon: 'notifications-outline',
@@ -169,7 +177,9 @@ export default function ProfileScreen() {
       ) : null}
 
       <View style={styles.items}>
-        {accountItems.map((item) => (
+        {accountItems
+          .filter((item) => !item.minorOnly || profile?.isMinor)
+          .map((item) => (
           <Pressable
             key={item.title}
             disabled={!item.href}
@@ -192,7 +202,7 @@ export default function ProfileScreen() {
               color={Brand.muted}
             />
           </Pressable>
-        ))}
+          ))}
       </View>
 
       <PrimaryButton
