@@ -1,6 +1,10 @@
-import type { AthleteProfileSummary } from '@gordyar/mobile-core';
+import type {
+  AthleteProfileSummary,
+  BasicUserProfile,
+} from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, router } from 'expo-router';
+import { Image } from 'expo-image';
+import { Link, router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -11,17 +15,42 @@ import { Brand } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useSession } from '@/providers/session-provider';
 
-const accountItems = [
-  { icon: 'person-outline' as const, title: 'اطلاعات فردی و عکس پروفایل' },
-  { icon: 'card-outline' as const, title: 'عضویت‌ها و پرداخت‌ها' },
-  { icon: 'shield-checkmark-outline' as const, title: 'بیمه ورزشی و مدارک' },
-  { icon: 'settings-outline' as const, title: 'تنظیمات و حریم خصوصی' },
+const accountItems: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  hint: string;
+  href?: Href;
+}[] = [
+  {
+    icon: 'person-outline',
+    title: 'اطلاعات فردی و عکس پروفایل',
+    hint: 'نام، شهر، آدرس و تصویر',
+    href: '/edit-profile' as Href,
+  },
+  {
+    icon: 'card-outline',
+    title: 'عضویت‌ها، پرداخت‌ها و رسیدها',
+    hint: 'پرداخت زرین‌پال و سوابق مالی',
+    href: '/payments' as Href,
+  },
+  {
+    icon: 'trending-up-outline',
+    title: 'روند پیشرفت و اندازه‌ها',
+    hint: 'وزن، هدف‌ها و تاریخچه بدن',
+    href: '/progress' as Href,
+  },
+  {
+    icon: 'shield-checkmark-outline',
+    title: 'بیمه ورزشی و مدارک',
+    hint: 'در مرحله بعد تکمیل می‌شود',
+  },
 ];
 
 export default function ProfileScreen() {
   const { session, signOut } = useSession();
   const [leaving, setLeaving] = useState(false);
   const [profile, setProfile] = useState<AthleteProfileSummary | null>(null);
+  const [basicProfile, setBasicProfile] = useState<BasicUserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -30,9 +59,16 @@ export default function ProfileScreen() {
     setLoading(true);
     setLoadError(null);
     try {
-      setProfile(await api.getMyProfile());
+      const [athlete, basic] = await Promise.all([
+        api.getMyProfile(),
+        api.getMyBasicProfile(),
+      ]);
+      setProfile(athlete);
+      setBasicProfile(basic);
     } catch {
-      setLoadError('اطلاعات حساب دریافت نشد. یک‌بار خارج شوید و دوباره وارد شوید.');
+      setLoadError(
+        'اطلاعات حساب دریافت نشد. یک‌بار خارج شوید و دوباره وارد حساب شوید.',
+      );
     } finally {
       setLoading(false);
     }
@@ -43,34 +79,36 @@ export default function ProfileScreen() {
   }, [loadProfile]);
 
   const handleSignOut = () => {
-    Alert.alert('خروج از حساب', 'می‌خواهید از حساب ورزشکاری خود خارج شوید؟', [
-      { text: 'انصراف', style: 'cancel' },
-      {
-        text: 'خروج',
-        style: 'destructive',
-        onPress: async () => {
-          setLeaving(true);
-          try {
-            await signOut();
-            router.replace('/');
-          } finally {
-            setLeaving(false);
-          }
+    Alert.alert(
+      'خروج از حساب',
+      'می‌خواهید از حساب ورزشکاری خود خارج شوید؟',
+      [
+        { text: 'انصراف', style: 'cancel' },
+        {
+          text: 'خروج',
+          style: 'destructive',
+          onPress: async () => {
+            setLeaving(true);
+            try {
+              await signOut();
+              router.replace('/');
+            } finally {
+              setLeaving(false);
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   if (!session) {
     return (
       <Screen header={<BrandHeader />}>
         <Surface style={styles.guest}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={35} color={Brand.emerald} />
-          </View>
+          <Avatar imageUrl={null} size={76} />
           <Text style={styles.guestTitle}>حساب ورزشکاری گُردیار</Text>
           <Text style={styles.guestText}>
-            برای مشاهده عضویت‌ها، برنامه‌ها، پرداخت‌ها و سوابق ورزشی وارد حساب خود شوید.
+            برای مشاهده عضویت‌ها، برنامه‌ها، پرداخت‌ها و سوابق ورزشی وارد حساب شوید.
           </Text>
           <Link href="/sign-in" asChild>
             <Pressable style={styles.login}>
@@ -86,20 +124,19 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen
-      header={<BrandHeader />}
-      refreshing={loading}
-      onRefresh={loadProfile}>
+    <Screen header={<BrandHeader />} refreshing={loading} onRefresh={loadProfile}>
       <Surface style={styles.identity}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={35} color={Brand.emerald} />
-        </View>
+        <Avatar imageUrl={basicProfile?.profileImageUrl} size={70} />
         <View style={styles.identityCopy}>
           <Text style={styles.memberTitle}>
-            {profile ? `${profile.firstName} ${profile.lastName}` : 'ورزشکار گُردیار'}
+            {basicProfile
+              ? `${basicProfile.firstName} ${basicProfile.lastName}`
+              : 'ورزشکار گُردیار'}
           </Text>
           <Text style={styles.memberHint}>
-            {profile?.city ? `${profile.city} · حساب فعال و امن` : 'حساب فعال و امن'}
+            {basicProfile?.city
+              ? `${basicProfile.city} · حساب فعال و امن`
+              : 'حساب فعال و امن'}
           </Text>
         </View>
         <View style={styles.verified}>
@@ -118,25 +155,77 @@ export default function ProfileScreen() {
         <MembershipCard membership={profile.memberships[0]} />
       ) : profile && !loading ? (
         <Surface>
-          <Text style={styles.emptyMembership}>هنوز عضویت باشگاهی برای این حساب ثبت نشده است.</Text>
+          <Text style={styles.emptyMembership}>
+            هنوز عضویت باشگاهی برای این حساب ثبت نشده است.
+          </Text>
         </Surface>
       ) : null}
 
       <View style={styles.items}>
         {accountItems.map((item) => (
-          <Pressable key={item.title} style={styles.item}>
+          <Pressable
+            key={item.title}
+            disabled={!item.href}
+            onPress={() => item.href && router.push(item.href)}
+            style={({ pressed }) => [
+              styles.item,
+              pressed && item.href ? styles.itemPressed : null,
+              !item.href ? styles.itemDisabled : null,
+            ]}>
             <View style={styles.itemIcon}>
               <Ionicons name={item.icon} size={21} color={Brand.emerald} />
             </View>
-            <Text style={styles.itemTitle}>{item.title}</Text>
-            <Ionicons name="chevron-back" size={18} color={Brand.muted} />
+            <View style={styles.itemCopy}>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemHint}>{item.hint}</Text>
+            </View>
+            <Ionicons
+              name={item.href ? 'chevron-back' : 'time-outline'}
+              size={18}
+              color={Brand.muted}
+            />
           </Pressable>
         ))}
       </View>
 
-      <PrimaryButton title="خروج از حساب" onPress={handleSignOut} loading={leaving} />
+      <PrimaryButton
+        title="خروج از حساب"
+        onPress={handleSignOut}
+        loading={leaving}
+      />
       <Text style={styles.version}>گُردیار ورزشکار · نسخه آزمایشی ۱.۰</Text>
     </Screen>
+  );
+}
+
+function Avatar({
+  imageUrl,
+  size,
+}: {
+  imageUrl?: string | null;
+  size: number;
+}) {
+  return (
+    <View
+      style={[
+        styles.avatar,
+        { width: size, height: size, borderRadius: Math.round(size * 0.34) },
+      ]}>
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={180}
+        />
+      ) : (
+        <Ionicons
+          name="person"
+          size={Math.round(size * 0.5)}
+          color={Brand.emerald}
+        />
+      )}
+    </View>
   );
 }
 
@@ -185,9 +274,7 @@ function MembershipCard({
 const styles = StyleSheet.create({
   guest: { alignItems: 'center', gap: 12, paddingVertical: 28 },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 25,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#E9F4EC',
@@ -229,7 +316,13 @@ const styles = StyleSheet.create({
     borderColor: '#F3CACA',
     backgroundColor: '#FFF7F7',
   },
-  errorText: { flex: 1, color: Brand.danger, textAlign: 'right', fontSize: 12, lineHeight: 19 },
+  errorText: {
+    flex: 1,
+    color: Brand.danger,
+    textAlign: 'right',
+    fontSize: 12,
+    lineHeight: 19,
+  },
   membership: { gap: 15, borderColor: '#BFD7C7' },
   membershipHeader: {
     flexDirection: 'row-reverse',
@@ -273,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: Brand.card,
   },
   item: {
-    minHeight: 65,
+    minHeight: 70,
     paddingHorizontal: 15,
     flexDirection: 'row-reverse',
     alignItems: 'center',
@@ -281,6 +374,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Brand.line,
   },
+  itemPressed: { backgroundColor: Brand.surface },
+  itemDisabled: { opacity: 0.62 },
   itemIcon: {
     width: 40,
     height: 40,
@@ -289,6 +384,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemTitle: { flex: 1, color: Brand.text, fontWeight: '800', textAlign: 'right', fontSize: 13 },
+  itemCopy: { flex: 1, alignItems: 'flex-end', gap: 4 },
+  itemTitle: { color: Brand.text, fontWeight: '800', textAlign: 'right', fontSize: 13 },
+  itemHint: { color: Brand.muted, fontSize: 10, textAlign: 'right' },
   version: { color: Brand.muted, fontSize: 11, textAlign: 'center' },
 });

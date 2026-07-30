@@ -29,6 +29,7 @@ export class AthletesService {
           lastName: true,
           mobile: true,
           email: true,
+          profileImageUrl: true,
           gender: true,
           dateOfBirth: true,
           isMinor: true,

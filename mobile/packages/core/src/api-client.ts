@@ -2,11 +2,13 @@ import type {
   AttendancePass,
   AthleteGoal,
   AthleteMembership,
+  AthletePayment,
   AthleteProfileSummary,
   AthleteProgress,
   AthleteRegistration,
   BodyMeasurement,
   BodyMeasurementInput,
+  BasicUserProfile,
   DietPlan,
   FitnessGoal,
   GymDetails,
@@ -20,6 +22,7 @@ import type {
   SessionStore,
   SessionTokens,
   TrainingProgram,
+  UploadResult,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -109,6 +112,31 @@ export class GordyarApiClient {
     return this.request<AthleteProfileSummary>('/athletes/me/profile', { authenticated: true });
   }
 
+  getMyBasicProfile() {
+    return this.request<BasicUserProfile>('/profiles/me', { authenticated: true });
+  }
+
+  updateMyBasicProfile(
+    input: Partial<Pick<BasicUserProfile, 'firstName' | 'lastName' | 'city' | 'address' | 'profileImageUrl'>>,
+  ) {
+    return this.request<BasicUserProfile>('/profiles/me', {
+      method: 'PATCH',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
+  }
+
+  uploadProfileImage(file: { uri: string; name: string; type: string }) {
+    const form = new FormData();
+    form.append('purpose', 'PROFILE_IMAGE');
+    form.append('file', file as unknown as Blob);
+    return this.request<UploadResult>('/uploads/local', {
+      method: 'POST',
+      authenticated: true,
+      body: form,
+    });
+  }
+
   getMyMemberships() {
     return this.request<AthleteMembership[]>('/athletes/me/memberships', { authenticated: true });
   }
@@ -147,6 +175,17 @@ export class GordyarApiClient {
     });
   }
 
+  getMyPayments() {
+    return this.request<AthletePayment[]>('/payments/mine', { authenticated: true });
+  }
+
+  startMembershipPayment(membershipId: string) {
+    return this.request<{ paymentId: string; redirectUrl: string }>(
+      `/payments/memberships/${encodeURIComponent(membershipId)}/zarinpal`,
+      { method: 'POST', authenticated: true },
+    );
+  }
+
   async logout() {
     const session = await this.sessionStore.load();
     if (session?.refreshToken) {
@@ -165,7 +204,12 @@ export class GordyarApiClient {
     const session = options.authenticated ? await this.sessionStore.load() : null;
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
-    if (options.body) headers.set('Content-Type', 'application/json');
+    if (
+      options.body &&
+      !(typeof FormData !== 'undefined' && options.body instanceof FormData)
+    ) {
+      headers.set('Content-Type', 'application/json');
+    }
     if (session?.accessToken) headers.set('Authorization', `Bearer ${session.accessToken}`);
 
     const response = await fetch(`${this.baseUrl}${path}`, { ...options, headers });

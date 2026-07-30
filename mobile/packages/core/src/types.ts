@@ -89,9 +89,24 @@ export type AthleteProfileSummary = {
   mobile: string;
   email?: string | null;
   city?: string | null;
+  address?: string | null;
+  profileImageUrl?: string | null;
   isMinor: boolean;
   isRestricted: boolean;
   memberships: AthleteMembership[];
+};
+
+export type BasicUserProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
+  email?: string | null;
+  role: UserRole;
+  city?: string | null;
+  address?: string | null;
+  profileImageUrl?: string | null;
+  tenant?: { id: string; name: string; logoUrl?: string | null } | null;
 };
 
 export type GymSummary = {
@@ -249,6 +264,27 @@ export type AthleteProgress = {
   activeDiets: number;
   goals: AthleteGoal[];
   measurements: BodyMeasurement[];
+};
+
+export type AthletePayment = {
+  id: string;
+  amount: number | string;
+  status: 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED';
+  method: 'CASH' | 'POS' | 'ONLINE_GATEWAY' | 'WALLET';
+  gatewayRef?: string | null;
+  gatewayCardPan?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+  membership?: { plan?: { title: string } } | null;
+  order?: { id: string; totalAmount: number | string } | null;
+};
+
+export type UploadResult = {
+  url: string;
+  purpose: string;
+  ownerId: string;
+  size: number;
+  contentType: string;
 };
 
 export type SessionStore = {

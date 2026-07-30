@@ -21,6 +21,8 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ title: 'ساخت حساب ورزشکار' }} />
         <Stack.Screen name="gyms/[slug]" options={{ title: 'معرفی باشگاه' }} />
         <Stack.Screen name="progress" options={{ title: 'روند پیشرفت من' }} />
+        <Stack.Screen name="edit-profile" options={{ title: 'ویرایش پروفایل' }} />
+        <Stack.Screen name="payments" options={{ title: 'پرداخت‌ها و رسیدها' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>
