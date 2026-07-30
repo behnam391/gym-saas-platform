@@ -60,15 +60,18 @@ export class DietService {
     });
   }
 
-  listForAthlete(athleteUserId: string) {
+  listForAthlete(athleteUserId: string, hideDrafts = false) {
     return this.prisma.forTenant(async (tx) => {
       const athlete = await tx.athleteProfile.findUnique({ where: { userId: athleteUserId } });
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
       return tx.dietPlan.findMany({
-        where: { athleteId: athlete.id },
+        where: {
+          athleteId: athlete.id,
+          ...(hideDrafts ? { status: { not: 'DRAFT' as const } } : {}),
+        },
         include: {
           nutritionist: { include: { user: { select: { firstName: true, lastName: true } } } },
-          meals: true,
+          meals: { orderBy: { sortOrder: 'asc' } },
         },
         orderBy: { createdAt: 'desc' },
       });

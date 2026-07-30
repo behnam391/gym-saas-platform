@@ -68,15 +68,21 @@ export class ProgramsService {
     });
   }
 
-  listForAthlete(athleteUserId: string) {
+  listForAthlete(athleteUserId: string, hideDrafts = false) {
     return this.prisma.forTenant(async (tx) => {
       const athlete = await tx.athleteProfile.findUnique({ where: { userId: athleteUserId } });
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
       return tx.trainingProgram.findMany({
-        where: { athleteId: athlete.id },
+        where: {
+          athleteId: athlete.id,
+          ...(hideDrafts ? { status: { not: 'DRAFT' as const } } : {}),
+        },
         include: {
           trainer: { include: { user: { select: { firstName: true, lastName: true } } } },
-          sessions: { include: { exercises: true } },
+          sessions: {
+            include: { exercises: { orderBy: { sortOrder: 'asc' } } },
+            orderBy: { dayOfWeek: 'asc' },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });

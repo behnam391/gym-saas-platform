@@ -151,6 +151,69 @@ export type AttendancePass = {
   planTitle: string;
 };
 
+export type ProgramStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+
+export type FitnessGoal =
+  | 'FAT_LOSS'
+  | 'MUSCLE_GAIN'
+  | 'GENERAL_FITNESS'
+  | 'ENDURANCE'
+  | 'REHABILITATION';
+
+export type TrainingExercise = {
+  id: string;
+  name: string;
+  sets?: number | null;
+  reps?: string | null;
+  restSeconds?: number | null;
+  notes?: string | null;
+  sortOrder: number;
+};
+
+export type TrainingSession = {
+  id: string;
+  dayOfWeek: number;
+  title: string;
+  exercises: TrainingExercise[];
+};
+
+export type TrainingProgram = {
+  id: string;
+  title: string;
+  goal?: FitnessGoal | null;
+  status: ProgramStatus;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+  trainer: {
+    user: { firstName: string; lastName: string };
+  };
+  sessions: TrainingSession[];
+};
+
+export type DietMeal = {
+  id: string;
+  mealTime: string;
+  description: string;
+  calories?: number | null;
+  sortOrder: number;
+};
+
+export type DietPlan = {
+  id: string;
+  title: string;
+  goal?: FitnessGoal | null;
+  status: ProgramStatus;
+  dailyCalories?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+  nutritionist: {
+    user: { firstName: string; lastName: string };
+  };
+  meals: DietMeal[];
+};
+
 export type SessionStore = {
   load(): Promise<SessionTokens | null>;
   save(tokens: SessionTokens): Promise<void>;

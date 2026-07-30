@@ -17,13 +17,19 @@ export class ProgramsController {
     return this.programsService.create(user.userId, dto);
   }
 
+  @Get('me')
+  @Roles('ATHLETE')
+  listMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.programsService.listForAthlete(user.userId, true);
+  }
+
   @Get('athlete/:athleteUserId')
   @Roles('TRAINER', 'GYM_OWNER', 'ATHLETE')
   list(@Param('athleteUserId') athleteUserId: string, @CurrentUser() user: AuthenticatedUser) {
     if (user.role === 'ATHLETE' && user.userId !== athleteUserId) {
       throw new ForbiddenException('شما فقط به برنامه‌های خودتان دسترسی دارید.');
     }
-    return this.programsService.listForAthlete(athleteUserId);
+    return this.programsService.listForAthlete(athleteUserId, user.role === 'ATHLETE');
   }
 
   @Patch(':programId/status')

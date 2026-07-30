@@ -3,6 +3,7 @@ import type {
   AthleteMembership,
   AthleteProfileSummary,
   AthleteRegistration,
+  DietPlan,
   GymDetails,
   GymSummary,
   LoginRequest,
@@ -13,6 +14,7 @@ import type {
   OtpVerificationResult,
   SessionStore,
   SessionTokens,
+  TrainingProgram,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -104,6 +106,14 @@ export class GordyarApiClient {
 
   getMyMemberships() {
     return this.request<AthleteMembership[]>('/athletes/me/memberships', { authenticated: true });
+  }
+
+  getMyTrainingPrograms() {
+    return this.request<TrainingProgram[]>('/programs/me', { authenticated: true });
+  }
+
+  getMyDietPlans() {
+    return this.request<DietPlan[]>('/diet/me', { authenticated: true });
   }
 
   async logout() {
