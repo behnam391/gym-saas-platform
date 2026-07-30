@@ -214,6 +214,43 @@ export type DietPlan = {
   meals: DietMeal[];
 };
 
+export type BodyMeasurement = {
+  id: string;
+  recordedAt: string;
+  weightKg?: number | null;
+  waistCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
+  thighCm?: number | null;
+  calfCm?: number | null;
+  neckCm?: number | null;
+  shoulderCm?: number | null;
+  bodyFatPercent?: number | null;
+};
+
+export type BodyMeasurementInput = Omit<BodyMeasurement, 'id' | 'recordedAt'> & {
+  recordedAt?: string;
+};
+
+export type AthleteGoal = {
+  id: string;
+  type: FitnessGoal;
+  targetValue?: number | null;
+  targetDate?: string | null;
+  achieved: boolean;
+  createdAt: string;
+};
+
+export type AthleteProgress = {
+  latestMeasurement?: BodyMeasurement | null;
+  weightChangeKg?: number | null;
+  attendanceLast30Days: number;
+  activePrograms: number;
+  activeDiets: number;
+  goals: AthleteGoal[];
+  measurements: BodyMeasurement[];
+};
+
 export type SessionStore = {
   load(): Promise<SessionTokens | null>;
   save(tokens: SessionTokens): Promise<void>;

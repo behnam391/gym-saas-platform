@@ -1,26 +1,68 @@
+import type { AthleteProfileSummary, AthleteProgress } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandHeader } from '@/components/brand-header';
 import { Screen, Surface } from '@/components/screen';
 import { SectionTitle } from '@/components/section-title';
 import { Brand } from '@/constants/theme';
+import { api } from '@/lib/api';
 import { useSession } from '@/providers/session-provider';
 
 const actions = [
   { icon: 'qr-code-outline' as const, label: 'ورود سریع', href: '/pass' as const },
   { icon: 'barbell-outline' as const, label: 'برنامه من', href: '/programs' as const },
   { icon: 'search-outline' as const, label: 'باشگاه‌ها', href: '/gyms' as const },
-  { icon: 'chatbubbles-outline' as const, label: 'مشاوره', href: '/programs' as const },
+  { icon: 'trending-up-outline' as const, label: 'پیشرفت', href: '/progress' as Href },
 ];
 
 export default function HomeScreen() {
   const { session } = useSession();
+  const [progress, setProgress] = useState<AthleteProgress | null>(null);
+  const [profile, setProfile] = useState<AthleteProfileSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const [nextProgress, nextProfile] = await Promise.all([
+        api.getMyProgress(),
+        api.getMyProfile(),
+      ]);
+      setProgress(nextProgress);
+      setProfile(nextProfile);
+    } catch {
+      // Each detailed screen has its own retry state. The home summary remains usable offline.
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const membership = profile?.memberships.find((item) => item.status === 'ACTIVE')
+    ?? profile?.memberships[0];
+  const remainingDays = membership?.endDate
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(membership.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
+      )
+    : null;
 
   return (
-    <Screen header={<BrandHeader />} contentStyle={styles.content}>
+    <Screen
+      header={<BrandHeader />}
+      contentStyle={styles.content}
+      refreshing={loading}
+      onRefresh={session ? loadDashboard : undefined}>
       <LinearGradient
         colors={[Brand.inkSoft, Brand.ink]}
         start={{ x: 1, y: 0 }}
@@ -41,7 +83,14 @@ export default function HomeScreen() {
               <Text style={styles.heroButtonText}>ورود به حساب ورزشکاری</Text>
             </Pressable>
           </Link>
-        ) : null}
+        ) : (
+          <View style={styles.memberGreeting}>
+            <Ionicons name="checkmark-circle" size={18} color={Brand.lime} />
+            <Text style={styles.memberGreetingText}>
+              {profile ? `سلام ${profile.firstName}` : 'حساب ورزشکاری فعال'}
+            </Text>
+          </View>
+        )}
       </LinearGradient>
 
       <View style={styles.actions}>
@@ -57,17 +106,62 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      <SectionTitle title="وضعیت امروز" hint="خلاصه فعالیت و عضویت شما" />
+      <SectionTitle title="وضعیت امروز" hint="خلاصه زنده فعالیت و عضویت شما" />
       <View style={styles.stats}>
-        <Surface style={styles.statCard}>
-          <Text style={styles.statValue}>۰</Text>
-          <Text style={styles.statLabel}>جلسه این هفته</Text>
-        </Surface>
-        <Surface style={styles.statCard}>
-          <Text style={styles.statValue}>—</Text>
-          <Text style={styles.statLabel}>اعتبار عضویت</Text>
-        </Surface>
+        <StatCard
+          value={progress?.attendanceLast30Days?.toLocaleString('fa-IR') ?? '۰'}
+          label="حضور در ۳۰ روز"
+          icon="calendar-outline"
+        />
+        <StatCard
+          value={
+            remainingDays !== null
+              ? remainingDays.toLocaleString('fa-IR')
+              : membership?.status === 'ACTIVE' ? 'فعال' : '—'
+          }
+          label={remainingDays !== null ? 'روز اعتبار عضویت' : 'وضعیت عضویت'}
+          icon="card-outline"
+        />
       </View>
+      <View style={styles.stats}>
+        <StatCard
+          value={
+            progress?.latestMeasurement?.weightKg != null
+              ? `${progress.latestMeasurement.weightKg.toLocaleString('fa-IR')} ک`
+              : '—'
+          }
+          label="آخرین وزن"
+          icon="scale-outline"
+        />
+        <StatCard
+          value={
+            progress
+              ? (progress.activePrograms + progress.activeDiets).toLocaleString('fa-IR')
+              : '۰'
+          }
+          label="برنامه فعال"
+          icon="fitness-outline"
+        />
+      </View>
+
+      {session ? (
+        <Link href={'/progress' as Href} asChild>
+          <Pressable>
+            <Surface style={styles.progressCard}>
+              <View style={styles.progressIcon}>
+                <Ionicons name="analytics-outline" size={24} color={Brand.emerald} />
+              </View>
+              <View style={styles.progressCopy}>
+                <Text style={styles.progressTitle}>روند پیشرفت من</Text>
+                <Text style={styles.progressText}>
+                  وزن، اندازه‌های بدن و هدف‌های ورزشی را ثبت و دنبال کن.
+                </Text>
+              </View>
+              <Ionicons name="chevron-back" size={20} color={Brand.muted} />
+            </Surface>
+          </Pressable>
+        </Link>
+      ) : null}
 
       <Surface>
         <View style={styles.noticeHeader}>
@@ -77,12 +171,32 @@ export default function HomeScreen() {
           <View style={styles.noticeCopy}>
             <Text style={styles.noticeTitle}>پرونده ورزشی امن</Text>
             <Text style={styles.noticeText}>
-              سوابق عضویت، بیمه و ورودهای شما فقط برای افراد مجاز نمایش داده می‌شود.
+              سوابق عضویت، اندازه‌ها و ورودهای شما فقط برای افراد مجاز نمایش داده می‌شود.
             </Text>
           </View>
         </View>
       </Surface>
     </Screen>
+  );
+}
+
+function StatCard({
+  value,
+  label,
+  icon,
+}: {
+  value: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <Surface style={styles.statCard}>
+      <View style={styles.statTop}>
+        <Ionicons name={icon} size={18} color={Brand.emerald} />
+        <Text style={styles.statValue}>{value}</Text>
+      </View>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Surface>
   );
 }
 
@@ -108,7 +222,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 18,
   },
-  heroText: { color: '#B8C7C0', fontSize: 14, lineHeight: 24, textAlign: 'right', marginTop: 8 },
+  heroText: {
+    color: '#B8C7C0',
+    fontSize: 14,
+    lineHeight: 24,
+    textAlign: 'right',
+    marginTop: 8,
+  },
   heroButton: {
     marginTop: 20,
     backgroundColor: Brand.lime,
@@ -120,6 +240,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17,
   },
   heroButtonText: { color: Brand.ink, fontSize: 14, fontWeight: '900' },
+  memberGreeting: {
+    marginTop: 20,
+    minHeight: 43,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  memberGreetingText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   actions: { flexDirection: 'row-reverse', justifyContent: 'space-between', gap: 8 },
   action: { flex: 1, alignItems: 'center', gap: 8 },
   actionIcon: {
@@ -132,9 +263,26 @@ const styles = StyleSheet.create({
   },
   actionText: { color: Brand.text, fontSize: 11, fontWeight: '700' },
   stats: { flexDirection: 'row-reverse', gap: 12 },
-  statCard: { flex: 1 },
-  statValue: { color: Brand.emerald, fontSize: 25, fontWeight: '900', textAlign: 'right' },
-  statLabel: { color: Brand.muted, fontSize: 12, textAlign: 'right', marginTop: 4 },
+  statCard: { flex: 1, padding: 15 },
+  statTop: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statValue: { color: Brand.emerald, fontSize: 21, fontWeight: '900', textAlign: 'right' },
+  statLabel: { color: Brand.muted, fontSize: 11, textAlign: 'right', marginTop: 7 },
+  progressCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+  progressIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#E9F4EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressCopy: { flex: 1, alignItems: 'flex-end', gap: 5 },
+  progressTitle: { color: Brand.text, fontSize: 14, fontWeight: '900' },
+  progressText: { color: Brand.muted, fontSize: 11, lineHeight: 18, textAlign: 'right' },
   noticeHeader: { flexDirection: 'row-reverse', gap: 12, alignItems: 'flex-start' },
   noticeIcon: {
     width: 44,

@@ -1,9 +1,14 @@
 import type {
   AttendancePass,
+  AthleteGoal,
   AthleteMembership,
   AthleteProfileSummary,
+  AthleteProgress,
   AthleteRegistration,
+  BodyMeasurement,
+  BodyMeasurementInput,
   DietPlan,
+  FitnessGoal,
   GymDetails,
   GymSummary,
   LoginRequest,
@@ -114,6 +119,32 @@ export class GordyarApiClient {
 
   getMyDietPlans() {
     return this.request<DietPlan[]>('/diet/me', { authenticated: true });
+  }
+
+  getMyProgress() {
+    return this.request<AthleteProgress>('/athletes/me/progress', { authenticated: true });
+  }
+
+  getMyMeasurements() {
+    return this.request<BodyMeasurement[]>('/athletes/me/measurements', {
+      authenticated: true,
+    });
+  }
+
+  addMyMeasurement(input: BodyMeasurementInput) {
+    return this.request<BodyMeasurement>('/athletes/me/measurements', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
+  }
+
+  createMyGoal(input: { type: FitnessGoal; targetValue?: number; targetDate?: string }) {
+    return this.request<AthleteGoal>('/athletes/me/goals', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
   }
 
   async logout() {
