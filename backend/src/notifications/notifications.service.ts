@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
 import { NOTIFICATION_QUEUE } from '../queue/queue.module';
 import { NotificationJobData } from '../queue/notification.processor';
+import { RegisterPushDeviceDto } from './dto/push-device.dto';
 
 interface CreateNotificationInput {
   userId: string;
@@ -35,17 +36,41 @@ export class NotificationsService {
    * (see QueueModule's defaultJobOptions).
    */
   async create(input: CreateNotificationInput) {
-    const notification = await this.prisma.forTenant((tx) =>
-      tx.notification.create({
-        data: {
-          tenantId: this.tenantContext.tenantId,
-          userId: input.userId,
+    const { notification, pushDevices } = await this.prisma.forTenant(
+      async (tx) => {
+        const notification = await tx.notification.create({
+          data: {
+            tenantId: this.tenantContext.tenantId,
+            userId: input.userId,
+            title: input.title,
+            body: input.body,
+            channel: (input.channel ?? 'IN_APP') as any,
+            metadata: input.metadata as any,
+          },
+        });
+        const pushDevices = await tx.pushDevice.findMany({
+          where: { userId: input.userId, isActive: true },
+          select: { expoPushToken: true },
+        });
+        return { notification, pushDevices };
+      },
+    );
+
+    const pushData = {
+      ...(input.metadata ?? {}),
+      notificationId: notification.id,
+      route: this.routeFor(input.metadata),
+    };
+    await Promise.all(
+      pushDevices.map((device) =>
+        this.notificationQueue.add('dispatch', {
+          channel: 'PUSH',
+          to: device.expoPushToken,
           title: input.title,
           body: input.body,
-          channel: (input.channel ?? 'IN_APP') as any,
-          metadata: input.metadata as any,
-        },
-      }),
+          data: pushData,
+        }),
+      ),
     );
 
     if (input.channel === 'SMS' && input.userMobile) {
@@ -65,6 +90,40 @@ export class NotificationsService {
     }
 
     return notification;
+  }
+
+  registerDevice(userId: string, dto: RegisterPushDeviceDto) {
+    const tenantId = this.tenantContext.requireTenantId();
+    return this.prisma.forTenant((tx) =>
+      tx.pushDevice.upsert({
+        where: { expoPushToken: dto.expoPushToken },
+        create: {
+          tenantId,
+          userId,
+          expoPushToken: dto.expoPushToken,
+          platform: dto.platform,
+          deviceName: dto.deviceName?.trim() || null,
+        },
+        update: {
+          tenantId,
+          userId,
+          platform: dto.platform,
+          deviceName: dto.deviceName?.trim() || null,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
+      }),
+    );
+  }
+
+  unregisterDevice(userId: string, expoPushToken: string) {
+    return this.prisma.forTenant(async (tx) => {
+      const result = await tx.pushDevice.updateMany({
+        where: { userId, expoPushToken },
+        data: { isActive: false },
+      });
+      return { updated: result.count };
+    });
   }
 
   listMine(userId: string) {
@@ -95,5 +154,16 @@ export class NotificationsService {
       });
       return { updated: result.count };
     });
+  }
+
+  private routeFor(metadata?: Record<string, unknown>) {
+    switch (metadata?.type) {
+      case 'INSURANCE_REVIEW':
+        return '/insurance';
+      case 'PARENTAL_CONSENT_REVIEW':
+        return '/parental-consent';
+      default:
+        return '/notifications';
+    }
   }
 }

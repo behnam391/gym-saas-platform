@@ -3,6 +3,8 @@ import {
   IsEnum,
   IsString,
   IsNotEmpty,
+  IsOptional,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -24,6 +26,12 @@ export class RefreshDto {
   @IsString()
   @IsNotEmpty()
   refreshToken: string;
+
+  @IsOptional()
+  @Matches(/^Expo(nent)?PushToken\[[^\]]+\]$/, {
+    message: 'شناسه اعلان Expo معتبر نیست.',
+  })
+  expoPushToken?: string;
 }
 
 export class ChangePasswordDto {

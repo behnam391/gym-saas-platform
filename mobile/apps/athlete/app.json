@@ -47,6 +47,14 @@
           "photosPermission": "برای انتخاب عکس پروفایل، گُردیار به تصاویر انتخابی شما دسترسی نیاز دارد.",
           "cameraPermission": "برای ثبت عکس پروفایل، گُردیار به دوربین نیاز دارد."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#16865E",
+          "defaultChannel": "gordyar-updates"
+        }
       ]
     ],
     "experiments": {

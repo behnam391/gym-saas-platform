@@ -25,7 +25,7 @@ DECLARE
     'User', 'MembershipPlan', 'Membership', 'Payment', 'Attendance',
     'CrowdSnapshot', 'TrainingProgram', 'DietPlan', 'ProductCategory',
     'CafeteriaProduct', 'Order', 'Ticket', 'Review', 'Notification',
-    'Message', 'AuditLog', 'TenantGalleryImage', 'TenantFacility',
+    'Message', 'AuditLog', 'TenantGalleryImage', 'TenantFacility', 'PushDevice',
     'Advertisement', 'AttendanceDevice', 'AttendanceCredential',
     'FinancialAccount', 'TenantSubscription', 'ProfessionalContract',
     'ProfessionalSettlement'

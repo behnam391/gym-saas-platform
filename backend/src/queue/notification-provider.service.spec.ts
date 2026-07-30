@@ -2,12 +2,26 @@ import { KavenegarApi } from 'kavenegar';
 import * as nodemailer from 'nodemailer';
 import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 import { NotificationProviderService } from './notification-provider.service';
+import { Expo } from 'expo-server-sdk';
+
+const mockSendPushNotificationsAsync = jest.fn();
+const mockGetPushNotificationReceiptsAsync = jest.fn();
 
 jest.mock('kavenegar', () => ({
   KavenegarApi: jest.fn(),
 }));
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(),
+}));
+jest.mock('expo-server-sdk', () => ({
+  Expo: Object.assign(
+    jest.fn().mockImplementation(() => ({
+      sendPushNotificationsAsync: mockSendPushNotificationsAsync,
+      getPushNotificationReceiptsAsync:
+        mockGetPushNotificationReceiptsAsync,
+    })),
+    { isExpoPushToken: jest.fn().mockReturnValue(true) },
+  ),
 }));
 
 describe('NotificationProviderService Kavenegar SDK', () => {
@@ -21,6 +35,12 @@ describe('NotificationProviderService Kavenegar SDK', () => {
     VerifyLookup.mockImplementation((_input, callback) =>
       callback({}, 200, 'ok'),
     );
+    mockSendPushNotificationsAsync.mockResolvedValue([
+      { status: 'ok', id: 'receipt-1' },
+    ]);
+    mockGetPushNotificationReceiptsAsync.mockResolvedValue({
+      'receipt-1': { status: 'ok' },
+    });
   });
 
   function service(config: Record<string, unknown>) {
@@ -162,5 +182,32 @@ describe('NotificationProviderService Kavenegar SDK', () => {
       }),
     ).resolves.toBe('BLOCKED');
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
+  });
+
+  it('sends an Expo push and returns its receipt id', async () => {
+    const provider = service({});
+
+    await expect(
+      provider.sendPush({
+        to: 'ExponentPushToken[device-1]',
+        title: 'اعلان گُردیار',
+        body: 'نتیجه بررسی آماده است.',
+        data: { route: '/notifications' },
+      }),
+    ).resolves.toEqual({
+      receiptId: 'receipt-1',
+      deviceNotRegistered: false,
+    });
+
+    expect(Expo.isExpoPushToken).toHaveBeenCalledWith(
+      'ExponentPushToken[device-1]',
+    );
+    expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
+      expect.objectContaining({
+        to: 'ExponentPushToken[device-1]',
+        channelId: 'gordyar-updates',
+        data: { route: '/notifications' },
+      }),
+    ]);
   });
 });

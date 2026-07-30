@@ -3,11 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { Brand } from '@/constants/theme';
+import { PushNotificationCoordinator } from '@/components/push-notification-coordinator';
 import { SessionProvider } from '@/providers/session-provider';
 
 export default function RootLayout() {
   return (
     <SessionProvider>
+      <PushNotificationCoordinator />
       <Stack
         screenOptions={{
           headerShadowVisible: false,

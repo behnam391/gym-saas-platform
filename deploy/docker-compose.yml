@@ -120,6 +120,7 @@ services:
       KAVENEGAR_ALLOWED_RECIPIENTS: ${KAVENEGAR_ALLOWED_RECIPIENTS:-}
       KAVENEGAR_DRY_RUN: ${KAVENEGAR_DRY_RUN:-true}
       SMTP_HOST: ${SMTP_HOST:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
       NODE_ENV: production
     healthcheck:
       disable: true

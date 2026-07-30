@@ -296,13 +296,23 @@ export class AuthService {
     );
   }
 
-  async logout(refreshToken: string) {
+  async logout(refreshToken: string, expoPushToken?: string) {
     const db = this.prisma.forPlatform();
     const tokenHash = this.hashToken(refreshToken);
+    const stored = await db.refreshToken.findFirst({
+      where: { tokenHash },
+      select: { userId: true },
+    });
     await db.refreshToken.updateMany({
       where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    if (stored && expoPushToken) {
+      await db.pushDevice.updateMany({
+        where: { userId: stored.userId, expoPushToken },
+        data: { isActive: false },
+      });
+    }
     return { message: 'خروج با موفقیت انجام شد.' };
   }
 

@@ -14,6 +14,10 @@ import { Screen, Surface } from '@/components/screen';
 import { SectionTitle } from '@/components/section-title';
 import { Brand } from '@/constants/theme';
 import { api } from '@/lib/api';
+import {
+  getPushCapabilityStatus,
+  registerForPushNotifications,
+} from '@/lib/push-notifications';
 import { useSession } from '@/providers/session-provider';
 
 export default function NotificationsScreen() {
@@ -21,6 +25,10 @@ export default function NotificationsScreen() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [pushStatus, setPushStatus] = useState<
+    'loading' | 'enabled' | 'disabled' | 'unavailable'
+  >('loading');
+  const [enablingPush, setEnablingPush] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -43,6 +51,12 @@ export default function NotificationsScreen() {
     }
     loadNotifications();
   }, [loadNotifications, session, sessionLoading]);
+
+  useEffect(() => {
+    getPushCapabilityStatus()
+      .then(setPushStatus)
+      .catch(() => setPushStatus('unavailable'));
+  }, []);
 
   async function markRead(notification: AppNotification) {
     if (notification.isRead) return;
@@ -70,6 +84,16 @@ export default function NotificationsScreen() {
     }
   }
 
+  async function enablePush() {
+    setEnablingPush(true);
+    try {
+      const token = await registerForPushNotifications(true);
+      setPushStatus(token ? 'enabled' : 'disabled');
+    } finally {
+      setEnablingPush(false);
+    }
+  }
+
   if (sessionLoading || (loading && !items.length)) {
     return (
       <View style={styles.center}>
@@ -91,6 +115,56 @@ export default function NotificationsScreen() {
             : 'همه اعلان‌ها خوانده شده‌اند'
         }
       />
+
+      <Surface
+        style={[
+          styles.pushCard,
+          pushStatus === 'enabled' && styles.pushCardEnabled,
+        ]}>
+        <View
+          style={[
+            styles.pushIcon,
+            pushStatus === 'enabled' && styles.pushIconEnabled,
+          ]}>
+          <Ionicons
+            name={
+              pushStatus === 'enabled'
+                ? 'notifications'
+                : 'notifications-outline'
+            }
+            size={23}
+            color={Brand.emerald}
+          />
+        </View>
+        <View style={styles.pushCopy}>
+          <Text style={styles.pushTitle}>
+            {pushStatus === 'enabled'
+              ? 'اعلان گوشی فعال است'
+              : pushStatus === 'unavailable'
+                ? 'اعلان گوشی در نسخه نصب‌شده'
+                : 'فعال‌سازی اعلان گوشی'}
+          </Text>
+          <Text style={styles.pushHint}>
+            {pushStatus === 'enabled'
+              ? 'نتیجه مدارک و پیام‌های مهم روی نوار گوشی نمایش داده می‌شود.'
+              : pushStatus === 'unavailable'
+                ? 'اعلان سرور در Expo Go در دسترس نیست و پس از نصب APK گُردیار فعال می‌شود.'
+                : 'برای دریافت فوری نتیجه بیمه، رضایت‌نامه و پرداخت‌ها اجازه اعلان بدهید.'}
+          </Text>
+        </View>
+        {pushStatus === 'disabled' ? (
+          <Pressable
+            disabled={enablingPush}
+            onPress={enablePush}
+            style={styles.enablePushButton}>
+            {enablingPush ? (
+              <ActivityIndicator size="small" color={Brand.ink} />
+            ) : (
+              <Text style={styles.enablePushText}>فعال‌سازی</Text>
+            )}
+          </Pressable>
+        ) : null}
+      </Surface>
 
       {unread ? (
         <Pressable
@@ -183,6 +257,34 @@ const styles = StyleSheet.create({
     backgroundColor: Brand.surface,
   },
   loadingText: { color: Brand.muted, fontSize: 12 },
+  pushCard: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 10,
+    borderColor: Brand.line,
+  },
+  pushCardEnabled: { borderColor: '#BFD7C7', backgroundColor: '#FBFFF7' },
+  pushIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Brand.surface,
+  },
+  pushIconEnabled: { backgroundColor: '#E9F4EC' },
+  pushCopy: { flex: 1, alignItems: 'flex-end', gap: 4 },
+  pushTitle: { color: Brand.text, fontSize: 12, fontWeight: '900', textAlign: 'right' },
+  pushHint: { color: Brand.muted, fontSize: 10, lineHeight: 17, textAlign: 'right' },
+  enablePushButton: {
+    minHeight: 37,
+    paddingHorizontal: 11,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Brand.lime,
+  },
+  enablePushText: { color: Brand.ink, fontSize: 10, fontWeight: '900' },
   markAll: {
     alignSelf: 'flex-start',
     minHeight: 40,

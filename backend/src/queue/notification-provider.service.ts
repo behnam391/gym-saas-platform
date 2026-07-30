@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { KavenegarApi } from 'kavenegar';
+import { Expo } from 'expo-server-sdk';
 import { PlatformIntegrationConfigService } from '../integrations/platform-integration-config.service';
 
 export interface SendSmsInput {
@@ -17,15 +18,34 @@ export interface SendEmailInput {
   html: string;
 }
 
+export interface SendPushInput {
+  to: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+}
+
+export interface PushDeliveryResult {
+  receiptId?: string;
+  deviceNotRegistered: boolean;
+}
+
 export type DeliveryResult = 'SENT' | 'DRY_RUN' | 'BLOCKED';
 
 @Injectable()
 export class NotificationProviderService {
   private readonly logger = new Logger(NotificationProviderService.name);
+  private readonly expo: Expo;
 
   constructor(
     private readonly integrationConfig: PlatformIntegrationConfigService,
-  ) {}
+  ) {
+    this.expo = new Expo(
+      process.env.EXPO_ACCESS_TOKEN
+        ? { accessToken: process.env.EXPO_ACCESS_TOKEN }
+        : undefined,
+    );
+  }
 
   async sendSms(input: SendSmsInput): Promise<DeliveryResult> {
     const config = await this.integrationConfig.getSmsGatewayConfig();
@@ -109,6 +129,48 @@ export class NotificationProviderService {
       html: input.html,
     });
     return 'SENT';
+  }
+
+  async sendPush(input: SendPushInput): Promise<PushDeliveryResult> {
+    if (!Expo.isExpoPushToken(input.to)) {
+      this.logger.warn('[Push skipped: invalid Expo token]');
+      return { deviceNotRegistered: true };
+    }
+    const [ticket] = await this.expo.sendPushNotificationsAsync([
+      {
+        to: input.to,
+        title: input.title,
+        body: input.body,
+        data: input.data,
+        sound: 'default',
+        priority: 'high',
+        channelId: 'gordyar-updates',
+      },
+    ]);
+    if (ticket.status === 'ok') {
+      return { receiptId: ticket.id, deviceNotRegistered: false };
+    }
+    if (ticket.details?.error === 'DeviceNotRegistered') {
+      return { deviceNotRegistered: true };
+    }
+    throw new Error(`Expo rejected push: ${ticket.message}`);
+  }
+
+  async checkPushReceipt(receiptId: string): Promise<PushDeliveryResult> {
+    const receipts = await this.expo.getPushNotificationReceiptsAsync([
+      receiptId,
+    ]);
+    const receipt = receipts[receiptId];
+    if (!receipt) {
+      throw new Error('Expo push receipt is not available yet.');
+    }
+    if (receipt.status === 'ok') {
+      return { receiptId, deviceNotRegistered: false };
+    }
+    if (receipt.details?.error === 'DeviceNotRegistered') {
+      return { receiptId, deviceNotRegistered: true };
+    }
+    throw new Error(`Expo push delivery failed: ${receipt.message}`);
   }
 
   private normalizeMobile(value: string) {

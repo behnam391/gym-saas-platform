@@ -308,6 +308,7 @@ model Tenant {
   tickets                 Ticket[]
   reviews                 Review[]
   notifications           Notification[]
+  pushDevices             PushDevice[]
   auditLogs               AuditLog[]
   crowdSnapshots          CrowdSnapshot[]
   messages                Message[]
@@ -412,6 +413,7 @@ model User {
   ticketsAssigned       Ticket[]                 @relation("TicketAssignee")
   reviewsWritten        Review[]                 @relation("ReviewAuthor")
   notifications         Notification[]
+  pushDevices           PushDevice[]
   sentMessages          Message[]                @relation("MessageSender")
   auditLogs             AuditLog[]
   trainerStudents       TrainerStudent[]         @relation("StudentSide")
@@ -1252,6 +1254,24 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+}
+
+model PushDevice {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expoPushToken String   @unique
+  platform      String
+  deviceName    String?
+  isActive      Boolean  @default(true)
+  lastSeenAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, userId, isActive])
+  @@index([userId, isActive])
 }
 
 model Message {

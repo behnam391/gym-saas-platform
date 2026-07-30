@@ -2,6 +2,10 @@ import type { SessionTokens } from '@gordyar/mobile-core';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { api } from '@/lib/api';
+import {
+  clearStoredPushToken,
+  getStoredPushToken,
+} from '@/lib/push-notifications';
 import { sessionStorage } from '@/lib/session-storage';
 
 type SessionContextValue = {
@@ -35,9 +39,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
         setSession(next);
       },
       async signOut() {
+        const expoPushToken = await getStoredPushToken();
         try {
-          await api.logout();
+          await api.logout(expoPushToken ?? undefined);
         } finally {
+          await clearStoredPushToken();
           await sessionStorage.clear();
           setSession(null);
         }

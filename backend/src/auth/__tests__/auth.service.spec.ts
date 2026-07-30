@@ -193,6 +193,34 @@ describe('AuthService.refresh', () => {
   });
 });
 
+describe('AuthService.logout', () => {
+  it('deactivates the current phone push token while revoking the session', async () => {
+    const db = {
+      refreshToken: {
+        findFirst: jest.fn().mockResolvedValue({ userId: 'user-1' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      pushDevice: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = makeService(db);
+
+    await service.logout(
+      'refresh-token',
+      'ExponentPushToken[device-1]',
+    );
+
+    expect(db.pushDevice.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        expoPushToken: 'ExponentPushToken[device-1]',
+      },
+      data: { isActive: false },
+    });
+  });
+});
+
 describe('AuthService.login', () => {
   it('binds credentials to the selected role portal before issuing tokens', async () => {
     const db = {

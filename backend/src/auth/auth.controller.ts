@@ -65,7 +65,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   logout(@Body() dto: RefreshDto) {
-    return this.authService.logout(dto.refreshToken);
+    return this.authService.logout(dto.refreshToken, dto.expoPushToken);
   }
 
   @Post('change-password')

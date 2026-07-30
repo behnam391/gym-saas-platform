@@ -243,13 +243,36 @@ export class GordyarApiClient {
     });
   }
 
-  async logout() {
+  registerPushDevice(input: {
+    expoPushToken: string;
+    platform: 'android' | 'ios';
+    deviceName?: string;
+  }) {
+    return this.request('/notifications/devices', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
+  }
+
+  unregisterPushDevice(expoPushToken: string) {
+    return this.request<{ updated: number }>('/notifications/devices', {
+      method: 'DELETE',
+      authenticated: true,
+      body: JSON.stringify({ expoPushToken }),
+    });
+  }
+
+  async logout(expoPushToken?: string) {
     const session = await this.sessionStore.load();
     if (session?.refreshToken) {
       try {
         await this.request('/auth/logout', {
           method: 'POST',
-          body: JSON.stringify({ refreshToken: session.refreshToken }),
+          body: JSON.stringify({
+            refreshToken: session.refreshToken,
+            expoPushToken,
+          }),
         });
       } finally {
         await this.sessionStore.clear();
