@@ -42,6 +42,7 @@ export function NeshanLocationPicker({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const addressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [config, setConfig] = useState<BrowserMapConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
@@ -98,6 +99,7 @@ export function NeshanLocationPicker({
       const selectPoint = (lng: number, lat: number) => {
         markerRef.current?.setLngLat([lng, lat]);
         onChange(lat, lng);
+        scheduleAddress(lat, lng);
       };
       map.on('click', (event: any) =>
         selectPoint(event.lngLat.lng, event.lngLat.lat),
@@ -125,6 +127,7 @@ export function NeshanLocationPicker({
 
     return () => {
       cancelled = true;
+      if (addressTimerRef.current) clearTimeout(addressTimerRef.current);
       map?.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -152,6 +155,7 @@ export function NeshanLocationPicker({
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         onChange(coords.latitude, coords.longitude);
+        scheduleAddress(coords.latitude, coords.longitude);
         markerRef.current?.setLngLat([coords.longitude, coords.latitude]);
         mapRef.current?.flyTo({
           center: [coords.longitude, coords.latitude],
@@ -166,17 +170,30 @@ export function NeshanLocationPicker({
     );
   }
 
-  async function resolveAddress() {
-    if (latitude === null || longitude === null) {
+  function scheduleAddress(targetLatitude: number, targetLongitude: number) {
+    if (addressTimerRef.current) clearTimeout(addressTimerRef.current);
+    setResolving(true);
+    addressTimerRef.current = setTimeout(() => {
+      addressTimerRef.current = null;
+      void resolveAddress(targetLatitude, targetLongitude);
+    }, 650);
+  }
+
+  async function resolveAddress(
+    targetLatitude: number | null = latitude,
+    targetLongitude: number | null = longitude,
+  ) {
+    if (targetLatitude === null || targetLongitude === null) {
       setError('ابتدا محل باشگاه را روی نقشه انتخاب کنید.');
+      setResolving(false);
       return;
     }
     setResolving(true);
     setError(null);
     try {
       const result = await api.post<ReverseAddress>('/maps/reverse-geocode', {
-        latitude,
-        longitude,
+        latitude: targetLatitude,
+        longitude: targetLongitude,
       });
       onAddress?.({
         address: result.formattedAddress ?? undefined,
@@ -236,7 +253,7 @@ export function NeshanLocationPicker({
           size="sm"
           variant="secondary"
           disabled={resolving || latitude === null}
-          onClick={resolveAddress}
+          onClick={() => void resolveAddress()}
         >
           {resolving ? 'در حال دریافت آدرس…' : 'تکمیل آدرس از روی نقشه'}
         </Button>
