@@ -110,7 +110,9 @@ export class PlatformIntegrationsAdminService {
             ...integration,
             settings: stored
               ? {
-                  serverApiKeyHint: this.mask(stored.serverApiKey),
+                  serverApiKeyHint: stored.serverApiKey
+                    ? this.mask(stored.serverApiKey)
+                    : '',
                   browserApiKeyHint: stored.browserApiKey
                     ? this.mask(stored.browserApiKey)
                     : '',
@@ -246,20 +248,21 @@ export class PlatformIntegrationsAdminService {
       const previous = await this.config.read<MapsGatewayConfig>(key);
       const serverApiKey =
         dto.mapServerApiKey?.trim() || previous?.serverApiKey;
-      if (!serverApiKey) {
+      const browserApiKey =
+        dto.mapBrowserApiKey?.trim() ||
+        previous?.browserApiKey ||
+        undefined;
+      if (!serverApiKey && !browserApiKey) {
         throw new BadRequestException(
-          `کلید وب‌سرویس ${key === 'NESHAN_MAPS' ? 'نشان' : 'Google Maps'} الزامی است.`,
+          `حداقل یکی از کلیدهای وب‌سرویس یا مرورگر ${key === 'NESHAN_MAPS' ? 'نشان' : 'Google Maps'} الزامی است.`,
         );
       }
       const config: MapsGatewayConfig = {
         serverApiKey,
-        browserApiKey:
-          dto.mapBrowserApiKey?.trim() ||
-          previous?.browserApiKey ||
-          undefined,
+        browserApiKey,
       };
       configuredFields = [
-        'serverApiKey',
+        ...(config.serverApiKey ? ['serverApiKey'] : []),
         ...(config.browserApiKey ? ['browserApiKey'] : []),
       ];
       await this.config.save(key, config, configuredFields);
@@ -353,6 +356,11 @@ export class PlatformIntegrationsAdminService {
             'ابتدا کلید وب‌سرویس نشان را ثبت کنید.',
           );
         }
+        if (!config.serverApiKey) {
+          throw new BadRequestException(
+            'برای تست سرویس تبدیل مختصات، کلید وب‌سرویس نشان را نیز ثبت کنید.',
+          );
+        }
         const response = await fetch(
           'https://api.neshan.org/v5/reverse?lat=35.6892&lng=51.3890',
           {
@@ -374,6 +382,11 @@ export class PlatformIntegrationsAdminService {
         if (!config) {
           throw new BadRequestException(
             'ابتدا کلید وب‌سرویس Google Maps را ثبت کنید.',
+          );
+        }
+        if (!config.serverApiKey) {
+          throw new BadRequestException(
+            'برای تست سرویس Google Maps، کلید وب‌سرویس سرور را نیز ثبت کنید.',
           );
         }
         const params = new URLSearchParams({

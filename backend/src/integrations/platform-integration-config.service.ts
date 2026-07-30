@@ -37,7 +37,7 @@ export interface EmailGatewayConfig {
 }
 
 export interface MapsGatewayConfig {
-  serverApiKey: string;
+  serverApiKey?: string;
   browserApiKey?: string;
 }
 
@@ -112,14 +112,15 @@ export class PlatformIntegrationConfigService {
     key: 'NESHAN_MAPS' | 'GOOGLE_MAPS',
   ): Promise<MapsGatewayConfig | null> {
     const stored = await this.read<MapsGatewayConfig>(key);
-    if (stored?.serverApiKey) return stored;
+    if (stored?.serverApiKey || stored?.browserApiKey) return stored;
     const prefix = key === 'NESHAN_MAPS' ? 'NESHAN' : 'GOOGLE_MAPS';
     const serverApiKey = process.env[`${prefix}_API_KEY`]?.trim();
-    if (!serverApiKey) return null;
+    const browserApiKey =
+      process.env[`${prefix}_BROWSER_API_KEY`]?.trim() || undefined;
+    if (!serverApiKey && !browserApiKey) return null;
     return {
-      serverApiKey,
-      browserApiKey:
-        process.env[`${prefix}_BROWSER_API_KEY`]?.trim() || undefined,
+      serverApiKey: serverApiKey || undefined,
+      browserApiKey,
     };
   }
 

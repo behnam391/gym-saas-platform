@@ -34,6 +34,7 @@ import { ProfessionalFinanceModule } from './professional-finance/professional-f
 import { HealthController } from './health.controller';
 import { PlatformIntegrationsRuntimeModule } from './integrations/platform-integrations-runtime.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { MapsModule } from './maps/maps.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     JwtModule.register({}),
     PrismaModule,
     PlatformIntegrationsRuntimeModule,
+    MapsModule,
     SubscriptionsModule,
     AuthModule,
     AttendanceModule,

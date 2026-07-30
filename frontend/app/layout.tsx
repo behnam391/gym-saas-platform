@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import '@fontsource-variable/vazirmatn';
+import '@neshan-maps-platform/mapbox-gl/dist/NeshanMapboxGl.css';
 import { BRAND } from '../lib/brand';
 import './globals.css';
 

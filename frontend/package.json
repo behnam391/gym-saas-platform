@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fontsource-variable/vazirmatn": "^5.2.6",
+    "@neshan-maps-platform/mapbox-gl": "^1.1.5",
     "@zxing/browser": "^0.2.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.452.0",

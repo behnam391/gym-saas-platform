@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsIn, IsNumber, IsOptional, IsString, IsUrl, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsNumber, IsOptional, IsString, IsUrl, Max, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class SearchTenantsDto {
@@ -28,8 +28,8 @@ export class UpdateTenantProfileDto {
   @IsOptional() @IsString() county?: string;
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() address?: string;
-  @IsOptional() @IsNumber() latitude?: number;
-  @IsOptional() @IsNumber() longitude?: number;
+  @IsOptional() @IsNumber() @Min(-90) @Max(90) latitude?: number;
+  @IsOptional() @IsNumber() @Min(-180) @Max(180) longitude?: number;
   @IsOptional() workingHours?: Record<string, unknown>;
   @IsOptional() socialLinks?: Record<string, unknown>;
 }
