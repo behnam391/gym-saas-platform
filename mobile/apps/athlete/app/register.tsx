@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FormField } from '@/components/form-field';
+import { ContactVerification } from '@/components/contact-verification';
 import { PrimaryButton } from '@/components/primary-button';
 import { Screen } from '@/components/screen';
 import { Brand } from '@/constants/theme';
@@ -19,6 +20,7 @@ const initialForm: AthleteRegistration = {
   lastName: '',
   nationalId: '',
   mobile: '',
+  email: '',
   password: '',
   gender: 'MALE',
   dateOfBirth: '',
@@ -34,6 +36,9 @@ export default function RegisterScreen() {
   });
   const [passwordRepeat, setPasswordRepeat] = useState('');
   const [accepted, setAccepted] = useState(false);
+  const [verificationToken, setVerificationToken] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +68,9 @@ export default function RegisterScreen() {
       return 'تاریخ تولد میلادی را به شکل ۱۹۹۶-۰۹-۰۵ وارد کنید.';
     }
     if (!accepted) return 'برای ساخت حساب، قوانین و حریم خصوصی را تایید کنید.';
+    if (!verificationToken) {
+      return 'ابتدا شماره موبایل یا ایمیل خود را با کد یک‌بارمصرف تأیید کنید.';
+    }
     return null;
   };
 
@@ -78,12 +86,14 @@ export default function RegisterScreen() {
     try {
       await api.registerAthlete({
         ...form,
+        verificationToken: verificationToken!,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         nationalId: toLatinDigits(form.nationalId.trim()),
         mobile: toLatinDigits(form.mobile.trim()),
         dateOfBirth: toLatinDigits(form.dateOfBirth.trim()),
         city: form.city?.trim() || undefined,
+        email: form.email?.trim().toLowerCase() || undefined,
       });
       router.replace({
         pathname: '/sign-in',
@@ -160,6 +170,21 @@ export default function RegisterScreen() {
         placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷"
       />
       <FormField
+        label="ایمیل (اختیاری)"
+        icon="mail-outline"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={form.email}
+        onChangeText={(value) => setField('email', value)}
+        placeholder="name@example.com"
+      />
+      <ContactVerification
+        mobile={form.mobile}
+        email={form.email}
+        onVerified={setVerificationToken}
+      />
+      <FormField
         label="تاریخ تولد (میلادی)"
         icon="calendar-outline"
         keyboardType="numbers-and-punctuation"
@@ -226,7 +251,12 @@ export default function RegisterScreen() {
       </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <PrimaryButton title="ساخت حساب ورزشکاری" onPress={submit} loading={loading} />
+      <PrimaryButton
+        title="ساخت حساب ورزشکاری"
+        onPress={submit}
+        loading={loading}
+        disabled={!verificationToken}
+      />
     </Screen>
   );
 }

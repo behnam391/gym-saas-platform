@@ -8,6 +8,9 @@ import type {
   LoginRequest,
   RegistrationResult,
   MembershipRequestResult,
+  OtpChannel,
+  OtpRequestResult,
+  OtpVerificationResult,
   SessionStore,
   SessionTokens,
 } from './types';
@@ -45,10 +48,28 @@ export class GordyarApiClient {
     return tokens;
   }
 
-  registerAthlete(input: AthleteRegistration) {
+  registerAthlete(input: AthleteRegistration & { verificationToken: string }) {
     return this.request<RegistrationResult>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  }
+
+  requestOtp(channel: OtpChannel, destination: string) {
+    return this.request<OtpRequestResult>('/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        channel,
+        destination,
+        purpose: 'REGISTER',
+      }),
+    });
+  }
+
+  verifyOtp(challengeId: string, code: string) {
+    return this.request<OtpVerificationResult>('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId, code }),
     });
   }
 

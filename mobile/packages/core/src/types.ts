@@ -42,6 +42,23 @@ export type RegistrationResult = {
   message: string;
 };
 
+export type OtpChannel = 'SMS' | 'EMAIL';
+
+export type OtpRequestResult = {
+  challengeId: string;
+  expiresAt: string;
+  retryAfterSeconds: number;
+  message: string;
+  debugCode?: string;
+};
+
+export type OtpVerificationResult = {
+  verificationToken: string;
+  channel: OtpChannel;
+  destination: string;
+  message: string;
+};
+
 export type MembershipPlanSummary = {
   id: string;
   title: string;
