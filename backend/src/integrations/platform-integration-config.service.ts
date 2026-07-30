@@ -36,10 +36,16 @@ export interface EmailGatewayConfig {
   dryRun: boolean;
 }
 
+export interface MapsGatewayConfig {
+  serverApiKey: string;
+  browserApiKey?: string;
+}
+
 type IntegrationConfig =
   | PaymentGatewayConfig
   | SmsGatewayConfig
-  | EmailGatewayConfig;
+  | EmailGatewayConfig
+  | MapsGatewayConfig;
 
 @Injectable()
 export class PlatformIntegrationConfigService {
@@ -99,6 +105,21 @@ export class PlatformIntegrationConfigService {
         .map((value) => this.normalizeEmailRecipient(value))
         .filter(Boolean),
       dryRun: process.env.SMTP_DRY_RUN !== 'false',
+    };
+  }
+
+  async getMapsGatewayConfig(
+    key: 'NESHAN_MAPS' | 'GOOGLE_MAPS',
+  ): Promise<MapsGatewayConfig | null> {
+    const stored = await this.read<MapsGatewayConfig>(key);
+    if (stored?.serverApiKey) return stored;
+    const prefix = key === 'NESHAN_MAPS' ? 'NESHAN' : 'GOOGLE_MAPS';
+    const serverApiKey = process.env[`${prefix}_API_KEY`]?.trim();
+    if (!serverApiKey) return null;
+    return {
+      serverApiKey,
+      browserApiKey:
+        process.env[`${prefix}_BROWSER_API_KEY`]?.trim() || undefined,
     };
   }
 

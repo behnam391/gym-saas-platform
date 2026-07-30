@@ -106,4 +106,57 @@ describe('PlatformIntegrationsAdminService', () => {
     );
     expect(verify).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    {
+      key: 'NESHAN_MAPS',
+      response: { ok: true, json: { status: 'OK' } },
+      expectedUrl: 'https://api.neshan.org/v5/reverse?lat=35.6892&lng=51.3890',
+    },
+    {
+      key: 'GOOGLE_MAPS',
+      response: { ok: true, json: { status: 'OK', results: [] } },
+      expectedUrl: 'https://maps.googleapis.com/maps/api/geocode/json?',
+    },
+  ])('validates the $key server key with a real geocoding shape', async ({
+    key,
+    response,
+    expectedUrl,
+  }) => {
+    const db = {
+      platformIntegration: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: `${key}-integration`,
+          key,
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+      $transaction: jest.fn().mockResolvedValue([]),
+    };
+    const config = {
+      getMapsGatewayConfig: jest.fn().mockResolvedValue({
+        serverApiKey: 'valid-server-map-key',
+      }),
+    };
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: response.ok,
+      json: jest.fn().mockResolvedValue(response.json),
+    } as unknown as Response);
+    const service = new PlatformIntegrationsAdminService(
+      { forPlatform: () => db } as never,
+      config as never,
+    );
+
+    await expect(
+      service.test(key, 'super-admin-id'),
+    ).resolves.toEqual(
+      expect.objectContaining({ healthy: true, limited: false }),
+    );
+    expect(String(fetchSpy.mock.calls[0][0])).toContain(expectedUrl);
+    expect(db.platformIntegration.update).toHaveBeenCalledWith({
+      where: { key },
+      data: { status: 'HEALTHY', lastCheckedAt: expect.any(Date) },
+    });
+  });
 });

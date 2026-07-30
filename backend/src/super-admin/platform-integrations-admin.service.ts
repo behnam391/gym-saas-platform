@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import {
   EmailGatewayConfig,
+  MapsGatewayConfig,
   PaymentGatewayConfig,
   PlatformIntegrationConfigService,
   SmsGatewayConfig,
@@ -94,6 +95,25 @@ export class PlatformIntegrationsAdminService {
                   fromName: stored.fromName,
                   allowedRecipients: stored.allowedRecipients.join(','),
                   dryRun: stored.dryRun,
+                }
+              : null,
+          };
+        }
+        if (
+          integration.key === 'NESHAN_MAPS' ||
+          integration.key === 'GOOGLE_MAPS'
+        ) {
+          const stored = await this.config
+            .read<MapsGatewayConfig>(integration.key)
+            .catch(() => null);
+          return {
+            ...integration,
+            settings: stored
+              ? {
+                  serverApiKeyHint: this.mask(stored.serverApiKey),
+                  browserApiKeyHint: stored.browserApiKey
+                    ? this.mask(stored.browserApiKey)
+                    : '',
                 }
               : null,
           };
@@ -222,6 +242,27 @@ export class PlatformIntegrationsAdminService {
         ...(config.password ? ['password'] : []),
       ];
       await this.config.save(key, config, configuredFields);
+    } else if (key === 'NESHAN_MAPS' || key === 'GOOGLE_MAPS') {
+      const previous = await this.config.read<MapsGatewayConfig>(key);
+      const serverApiKey =
+        dto.mapServerApiKey?.trim() || previous?.serverApiKey;
+      if (!serverApiKey) {
+        throw new BadRequestException(
+          `کلید وب‌سرویس ${key === 'NESHAN_MAPS' ? 'نشان' : 'Google Maps'} الزامی است.`,
+        );
+      }
+      const config: MapsGatewayConfig = {
+        serverApiKey,
+        browserApiKey:
+          dto.mapBrowserApiKey?.trim() ||
+          previous?.browserApiKey ||
+          undefined,
+      };
+      configuredFields = [
+        'serverApiKey',
+        ...(config.browserApiKey ? ['browserApiKey'] : []),
+      ];
+      await this.config.save(key, config, configuredFields);
     } else {
       throw new BadRequestException('ثبت کلید برای این اتصال هنوز پیاده‌سازی نشده است.');
     }
@@ -305,6 +346,58 @@ export class PlatformIntegrationsAdminService {
           socketTimeout: 15_000,
         });
         await transporter.verify();
+      } else if (key === 'NESHAN_MAPS') {
+        const config = await this.config.getMapsGatewayConfig('NESHAN_MAPS');
+        if (!config) {
+          throw new BadRequestException(
+            'ابتدا کلید وب‌سرویس نشان را ثبت کنید.',
+          );
+        }
+        const response = await fetch(
+          'https://api.neshan.org/v5/reverse?lat=35.6892&lng=51.3890',
+          {
+            headers: { 'Api-Key': config.serverApiKey },
+            signal: AbortSignal.timeout(15_000),
+          },
+        );
+        const body = (await response.json().catch(() => null)) as
+          | { status?: string; message?: string }
+          | null;
+        if (!response.ok || body?.status !== 'OK') {
+          throw new Error(
+            body?.message || `Neshan status ${response.status}`,
+          );
+        }
+      } else if (key === 'GOOGLE_MAPS') {
+        const config =
+          await this.config.getMapsGatewayConfig('GOOGLE_MAPS');
+        if (!config) {
+          throw new BadRequestException(
+            'ابتدا کلید وب‌سرویس Google Maps را ثبت کنید.',
+          );
+        }
+        const params = new URLSearchParams({
+          latlng: '35.6892,51.3890',
+          language: 'fa',
+          key: config.serverApiKey,
+        });
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?${params}`,
+          { signal: AbortSignal.timeout(15_000) },
+        );
+        const body = (await response.json().catch(() => null)) as
+          | { status?: string; error_message?: string }
+          | null;
+        if (
+          !response.ok ||
+          !body ||
+          !['OK', 'ZERO_RESULTS'].includes(body.status ?? '')
+        ) {
+          throw new Error(
+            body?.error_message ||
+              `Google Maps status ${body?.status ?? response.status}`,
+          );
+        }
       } else {
         throw new BadRequestException('تست این اتصال هنوز پیاده‌سازی نشده است.');
       }

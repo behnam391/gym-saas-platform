@@ -109,6 +109,16 @@ export class SaveIntegrationCredentialsDto {
   @IsOptional()
   @IsBoolean()
   emailDryRun?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  mapServerApiKey?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  mapBrowserApiKey?: string;
 }
 
 export class AssignSubscriptionDto {

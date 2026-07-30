@@ -30,6 +30,8 @@ interface IntegrationSettings {
   passwordConfigured?: boolean;
   fromAddress?: string;
   fromName?: string;
+  serverApiKeyHint?: string;
+  browserApiKeyHint?: string;
 }
 
 interface Integration {
@@ -63,6 +65,8 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
   const payment = items.find((item) => item.key === 'PAYMENT_GATEWAY');
   const sms = items.find((item) => item.key === 'SMS');
   const email = items.find((item) => item.key === 'EMAIL_SMTP');
+  const neshan = items.find((item) => item.key === 'NESHAN_MAPS');
+  const googleMaps = items.find((item) => item.key === 'GOOGLE_MAPS');
   const [paymentForm, setPaymentForm] = useState({
     merchantId: '',
     callbackUrl:
@@ -88,8 +92,19 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
     allowedRecipients: email?.settings?.allowedRecipients ?? '',
     dryRun: email?.settings?.dryRun ?? true,
   });
+  const [mapForms, setMapForms] = useState({
+    NESHAN_MAPS: { serverApiKey: '', browserApiKey: '' },
+    GOOGLE_MAPS: { serverApiKey: '', browserApiKey: '' },
+  });
 
-  async function save(key: 'PAYMENT_GATEWAY' | 'SMS' | 'EMAIL_SMTP') {
+  async function save(
+    key:
+      | 'PAYMENT_GATEWAY'
+      | 'SMS'
+      | 'EMAIL_SMTP'
+      | 'NESHAN_MAPS'
+      | 'GOOGLE_MAPS',
+  ) {
     setBusy(`${key}:save`);
     setErrors((current) => ({ ...current, [key]: '' }));
     setMessages((current) => ({ ...current, [key]: '' }));
@@ -108,7 +123,8 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
               allowedRecipients: smsForm.allowedRecipients,
               dryRun: smsForm.dryRun,
             }
-          : {
+          : key === 'EMAIL_SMTP'
+            ? {
               smtpHost: emailForm.host,
               smtpPort: emailForm.port,
               smtpSecure: emailForm.secure,
@@ -122,7 +138,15 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
               smtpFromName: emailForm.fromName,
               emailAllowedRecipients: emailForm.allowedRecipients,
               emailDryRun: emailForm.dryRun,
-            };
+              }
+            : {
+                ...(mapForms[key].serverApiKey
+                  ? { mapServerApiKey: mapForms[key].serverApiKey }
+                  : {}),
+                ...(mapForms[key].browserApiKey
+                  ? { mapBrowserApiKey: mapForms[key].browserApiKey }
+                  : {}),
+              };
       const changed = await api.patch<Integration[]>(
         `/super-admin/integrations/${key}/credentials`,
         payload,
@@ -132,11 +156,16 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
         setPaymentForm((current) => ({ ...current, merchantId: '' }));
       } else if (key === 'SMS') {
         setSmsForm((current) => ({ ...current, apiKey: '' }));
-      } else {
+      } else if (key === 'EMAIL_SMTP') {
         setEmailForm((current) => ({
           ...current,
           username: '',
           password: '',
+        }));
+      } else {
+        setMapForms((current) => ({
+          ...current,
+          [key]: { serverApiKey: '', browserApiKey: '' },
         }));
       }
       setMessages((current) => ({
@@ -154,7 +183,14 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
     }
   }
 
-  async function test(key: 'PAYMENT_GATEWAY' | 'SMS' | 'EMAIL_SMTP') {
+  async function test(
+    key:
+      | 'PAYMENT_GATEWAY'
+      | 'SMS'
+      | 'EMAIL_SMTP'
+      | 'NESHAN_MAPS'
+      | 'GOOGLE_MAPS',
+  ) {
     setBusy(`${key}:test`);
     setErrors((current) => ({ ...current, [key]: '' }));
     setMessages((current) => ({ ...current, [key]: '' }));
@@ -212,6 +248,87 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
           <p className="mt-1 text-sm text-muted">{provider}</p>
         </div>
       </div>
+    );
+  }
+
+  function mapCard(
+    item: Integration,
+    key: 'NESHAN_MAPS' | 'GOOGLE_MAPS',
+    provider: string,
+  ) {
+    const form = mapForms[key];
+    const isNeshan = key === 'NESHAN_MAPS';
+    return (
+      <MembershipCard>
+        {header(item, provider)}
+        <div className="mt-5 grid gap-4">
+          <Input
+            label={`کلید وب‌سرویس ${isNeshan ? 'نشان' : 'Google Maps'}`}
+            type="password"
+            dir="ltr"
+            placeholder={
+              item.settings?.serverApiKeyHint
+                ? `ثبت شده: ${item.settings.serverApiKeyHint}`
+                : 'Server API Key'
+            }
+            value={form.serverApiKey}
+            onChange={(event) =>
+              setMapForms((current) => ({
+                ...current,
+                [key]: {
+                  ...current[key],
+                  serverApiKey: event.target.value.trim(),
+                },
+              }))
+            }
+          />
+          <Input
+            label={`کلید نمایش نقشه در وب (اختیاری)`}
+            type="password"
+            dir="ltr"
+            placeholder={
+              item.settings?.browserApiKeyHint
+                ? `ثبت شده: ${item.settings.browserApiKeyHint}`
+                : isNeshan
+                  ? 'Web SDK Key'
+                  : 'Browser API Key'
+            }
+            value={form.browserApiKey}
+            onChange={(event) =>
+              setMapForms((current) => ({
+                ...current,
+                [key]: {
+                  ...current[key],
+                  browserApiKey: event.target.value.trim(),
+                },
+              }))
+            }
+          />
+          <p className="text-xs leading-5 text-muted">
+            کلید وب‌سرویس فقط در سرور استفاده می‌شود. کلید نمایش وب باید در
+            پنل ارائه‌دهنده به دامنه‌های gordyar.ir و app.gordyar.ir محدود
+            شود.
+          </p>
+          <SecureHint />
+          <Feedback message={messages[key]} error={errors[key]} />
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => save(key)} disabled={busy !== null}>
+              {busy === `${key}:save` && (
+                <LoaderCircle className="size-4 animate-spin" />
+              )}
+              ذخیره امن
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => test(key)}
+              disabled={busy !== null || item.status === 'NOT_CONFIGURED'}
+            >
+              <TestTube2 className="size-4" />
+              تست وب‌سرویس
+            </Button>
+          </div>
+        </div>
+      </MembershipCard>
     );
   }
 
@@ -516,10 +633,30 @@ export function PlatformIntegrationsPanel({ initial }: { initial: Integration[] 
         </MembershipCard>
       )}
 
+      {neshan &&
+        mapCard(
+          neshan,
+          'NESHAN_MAPS',
+          'نشان · جستجو، تبدیل آدرس و مسیریابی داخل ایران',
+        )}
+
+      {googleMaps &&
+        mapCard(
+          googleMaps,
+          'GOOGLE_MAPS',
+          'Google · نقشه و مکان‌یابی بین‌المللی',
+        )}
+
       {items
         .filter(
           (item) =>
-            !['PAYMENT_GATEWAY', 'SMS', 'EMAIL_SMTP'].includes(item.key),
+            ![
+              'PAYMENT_GATEWAY',
+              'SMS',
+              'EMAIL_SMTP',
+              'NESHAN_MAPS',
+              'GOOGLE_MAPS',
+            ].includes(item.key),
         )
         .map((item) => (
           <MembershipCard key={item.id}>
