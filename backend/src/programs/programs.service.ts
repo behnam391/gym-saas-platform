@@ -20,6 +20,17 @@ export class ProgramsService {
       const athlete = await tx.athleteProfile.findUnique({ where: { userId: dto.athleteUserId } });
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
 
+      const assignment = await tx.trainerStudent.findUnique({
+        where: {
+          trainerId_athleteId: { trainerId: trainer.id, athleteId: athlete.id },
+        },
+      });
+      if (!assignment?.isActive) {
+        throw new ForbiddenException('این ورزشکار به شما اختصاص داده نشده است.');
+      }
+
+      this.validateDateRange(dto.startDate, dto.endDate);
+
       // If sourced from an AI draft, that draft must already be APPROVED —
       // this is the enforcement point for the "no AI output reaches an
       // athlete without professional sign-off" rule for workout programs.
@@ -34,6 +45,11 @@ export class ProgramsService {
         }
       }
 
+      await tx.trainingProgram.updateMany({
+        where: { athleteId: athlete.id, status: 'ACTIVE' },
+        data: { status: 'ARCHIVED' },
+      });
+
       return tx.trainingProgram.create({
         data: {
           tenantId: this.tenantContext.requireTenantId(),
@@ -42,6 +58,8 @@ export class ProgramsService {
           title: dto.title,
           goal: dto.goal as any,
           status: 'ACTIVE',
+          startDate: dto.startDate ? new Date(dto.startDate) : new Date(),
+          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
           sourceAISuggestionId: dto.sourceAISuggestionId,
           sessions: {
             create: dto.sessions.map((s) => ({
@@ -62,23 +80,44 @@ export class ProgramsService {
         },
         include: {
           trainer: { include: { user: { select: { firstName: true, lastName: true } } } },
+          athlete: { include: { user: { select: { id: true, firstName: true, lastName: true } } } },
           sessions: { include: { exercises: true } },
         },
       });
     });
   }
 
-  listForAthlete(athleteUserId: string, hideDrafts = false) {
+  listForAthlete(
+    athleteUserId: string,
+    options: { hideDrafts?: boolean; trainerUserId?: string } | boolean = {},
+  ) {
+    const normalizedOptions =
+      typeof options === 'boolean' ? { hideDrafts: options } : options;
     return this.prisma.forTenant(async (tx) => {
       const athlete = await tx.athleteProfile.findUnique({ where: { userId: athleteUserId } });
       if (!athlete) throw new NotFoundException('ورزشکار یافت نشد.');
+
+      if (normalizedOptions.trainerUserId) {
+        const assignment = await tx.trainerStudent.findFirst({
+          where: {
+            athleteId: athlete.id,
+            isActive: true,
+            trainer: { userId: normalizedOptions.trainerUserId },
+          },
+        });
+        if (!assignment) {
+          throw new ForbiddenException('این ورزشکار به شما اختصاص داده نشده است.');
+        }
+      }
+
       return tx.trainingProgram.findMany({
         where: {
           athleteId: athlete.id,
-          ...(hideDrafts ? { status: { not: 'DRAFT' as const } } : {}),
+          ...(normalizedOptions.hideDrafts ? { status: { not: 'DRAFT' as const } } : {}),
         },
         include: {
           trainer: { include: { user: { select: { firstName: true, lastName: true } } } },
+          athlete: { include: { user: { select: { id: true, firstName: true, lastName: true } } } },
           sessions: {
             include: { exercises: { orderBy: { sortOrder: 'asc' } } },
             orderBy: { dayOfWeek: 'asc' },
@@ -89,9 +128,35 @@ export class ProgramsService {
     });
   }
 
-  updateStatus(programId: string, dto: UpdateProgramStatusDto) {
-    return this.prisma.forTenant((tx) =>
-      tx.trainingProgram.update({ where: { id: programId }, data: { status: dto.status as any } }),
-    );
+  updateStatus(trainerUserId: string, programId: string, dto: UpdateProgramStatusDto) {
+    return this.prisma.forTenant(async (tx) => {
+      const program = await tx.trainingProgram.findFirst({
+        where: { id: programId, trainer: { userId: trainerUserId } },
+        select: { id: true, athleteId: true },
+      });
+      if (!program) throw new NotFoundException('برنامه تمرینی متعلق به شما یافت نشد.');
+
+      if (dto.status === 'ACTIVE') {
+        await tx.trainingProgram.updateMany({
+          where: {
+            athleteId: program.athleteId,
+            status: 'ACTIVE',
+            id: { not: program.id },
+          },
+          data: { status: 'ARCHIVED' },
+        });
+      }
+
+      return tx.trainingProgram.update({
+        where: { id: program.id },
+        data: { status: dto.status as any },
+      });
+    });
+  }
+
+  private validateDateRange(startDate?: string, endDate?: string) {
+    if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+      throw new BadRequestException('تاریخ پایان برنامه باید بعد از تاریخ شروع باشد.');
+    }
   }
 }

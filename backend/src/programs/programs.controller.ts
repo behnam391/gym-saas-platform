@@ -29,12 +29,19 @@ export class ProgramsController {
     if (user.role === 'ATHLETE' && user.userId !== athleteUserId) {
       throw new ForbiddenException('شما فقط به برنامه‌های خودتان دسترسی دارید.');
     }
-    return this.programsService.listForAthlete(athleteUserId, user.role === 'ATHLETE');
+    return this.programsService.listForAthlete(athleteUserId, {
+      hideDrafts: user.role === 'ATHLETE',
+      trainerUserId: user.role === 'TRAINER' ? user.userId : undefined,
+    });
   }
 
   @Patch(':programId/status')
   @Roles('TRAINER')
-  updateStatus(@Param('programId') programId: string, @Body() dto: UpdateProgramStatusDto) {
-    return this.programsService.updateStatus(programId, dto);
+  updateStatus(
+    @Param('programId') programId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateProgramStatusDto,
+  ) {
+    return this.programsService.updateStatus(user.userId, programId, dto);
   }
 }

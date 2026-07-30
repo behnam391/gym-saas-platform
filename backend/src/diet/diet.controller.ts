@@ -29,12 +29,19 @@ export class DietController {
     if (user.role === 'ATHLETE' && user.userId !== athleteUserId) {
       throw new ForbiddenException('شما فقط به رژیم‌های خودتان دسترسی دارید.');
     }
-    return this.dietService.listForAthlete(athleteUserId, user.role === 'ATHLETE');
+    return this.dietService.listForAthlete(athleteUserId, {
+      hideDrafts: user.role === 'ATHLETE',
+      nutritionistUserId: user.role === 'NUTRITIONIST' ? user.userId : undefined,
+    });
   }
 
   @Patch(':dietPlanId/status')
   @Roles('NUTRITIONIST')
-  updateStatus(@Param('dietPlanId') dietPlanId: string, @Body() dto: UpdateDietStatusDto) {
-    return this.dietService.updateStatus(dietPlanId, dto);
+  updateStatus(
+    @Param('dietPlanId') dietPlanId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateDietStatusDto,
+  ) {
+    return this.dietService.updateStatus(user.userId, dietPlanId, dto);
   }
 }
