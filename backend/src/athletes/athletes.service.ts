@@ -248,12 +248,26 @@ export class AthletesService {
     });
   }
 
-  submitInsurance(userId: string, dto: SubmitInsuranceDto) {
+  async submitInsurance(userId: string, dto: SubmitInsuranceDto) {
     if (dto.validFrom && dto.validUntil && new Date(dto.validUntil) <= new Date(dto.validFrom)) {
       throw new BadRequestException('تاریخ پایان بیمه باید بعد از تاریخ شروع باشد.');
     }
-    return this.prisma.forTenant((tx) =>
-      tx.insuranceDocument.create({
+    return this.prisma.forTenant(async (tx) => {
+      const latest = await tx.insuranceDocument.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (latest?.status === 'PENDING') {
+        throw new ConflictException('یک مدرک بیمه در انتظار بررسی دارید.');
+      }
+      if (
+        latest?.status === 'APPROVED' &&
+        (!latest.validUntil || latest.validUntil > new Date())
+      ) {
+        throw new ConflictException('بیمه ورزشی معتبر شما قبلاً تأیید شده است.');
+      }
+
+      return tx.insuranceDocument.create({
         data: {
           userId,
           documentUrl: dto.documentUrl,
@@ -262,8 +276,8 @@ export class AthletesService {
           validFrom: dto.validFrom ? new Date(dto.validFrom) : undefined,
           validUntil: dto.validUntil ? new Date(dto.validUntil) : undefined,
         },
-      }),
-    );
+      });
+    });
   }
 
   submitParentalConsent(userId: string, dto: SubmitParentalConsentDto) {

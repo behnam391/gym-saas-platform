@@ -42,7 +42,14 @@ const accountItems: {
   {
     icon: 'shield-checkmark-outline',
     title: 'بیمه ورزشی و مدارک',
-    hint: 'در مرحله بعد تکمیل می‌شود',
+    hint: 'ارسال مدرک و مشاهده نتیجه بررسی',
+    href: '/insurance' as Href,
+  },
+  {
+    icon: 'notifications-outline',
+    title: 'اعلان‌های من',
+    hint: 'نتیجه بیمه، پرداخت و پیام‌های سامانه',
+    href: '/notifications' as Href,
   },
 ];
 

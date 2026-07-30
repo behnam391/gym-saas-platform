@@ -69,8 +69,22 @@ export class NotificationsService {
 
   listMine(userId: string) {
     return this.prisma.forTenant((tx) =>
-      tx.notification.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+      tx.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
     );
+  }
+
+  markAllRead(userId: string) {
+    return this.prisma.forTenant(async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true },
+      });
+      return { updated: result.count };
+    });
   }
 
   markRead(userId: string, notificationId: string) {

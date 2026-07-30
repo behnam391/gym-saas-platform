@@ -14,6 +14,11 @@ export class NotificationsController {
     return this.notificationsService.listMine(user.userId);
   }
 
+  @Patch('read-all')
+  markAllRead(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.markAllRead(user.userId);
+  }
+
   @Patch(':notificationId/read')
   markRead(
     @CurrentUser() user: AuthenticatedUser,

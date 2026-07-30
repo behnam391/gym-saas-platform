@@ -93,6 +93,7 @@ export type AthleteProfileSummary = {
   profileImageUrl?: string | null;
   isMinor: boolean;
   isRestricted: boolean;
+  insuranceDocs: InsuranceDocument[];
   memberships: AthleteMembership[];
 };
 
@@ -285,6 +286,29 @@ export type UploadResult = {
   ownerId: string;
   size: number;
   contentType: string;
+};
+
+export type InsuranceDocument = {
+  id: string;
+  documentUrl: string;
+  provider?: string | null;
+  policyNumber?: string | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+};
+
+export type AppNotification = {
+  id: string;
+  title: string;
+  body: string;
+  channel: 'IN_APP' | 'SMS' | 'EMAIL' | 'PUSH';
+  isRead: boolean;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
 };
 
 export type SessionStore = {

@@ -29,4 +29,15 @@ describe('NotificationsService', () => {
     expect(tx.notification.create).toHaveBeenCalled();
     expect(queue.add).not.toHaveBeenCalled();
   });
+
+  it('marks only the authenticated user notifications as read', async () => {
+    const tx = { notification: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) } };
+    const { service } = createService(tx);
+
+    await expect(service.markAllRead('user-1')).resolves.toEqual({ updated: 3 });
+    expect(tx.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', isRead: false },
+      data: { isRead: true },
+    });
+  });
 });

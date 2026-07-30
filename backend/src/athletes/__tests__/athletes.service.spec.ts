@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { AthletesService } from '../athletes.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -26,5 +26,20 @@ describe('AthletesService', () => {
       data: { weightKg: 74.2 },
     });
   });
-});
 
+  it('rejects a second insurance document while one is pending', async () => {
+    const tx = {
+      insuranceDocument: {
+        findFirst: jest.fn().mockResolvedValue({ status: 'PENDING' }),
+        create: jest.fn(),
+      },
+    };
+    const prisma = { forTenant: jest.fn((fn: any) => fn(tx)) } as unknown as PrismaService;
+    const service = new AthletesService(prisma);
+
+    await expect(
+      service.submitInsurance('user-1', { documentUrl: 'https://files.test/insurance.pdf' }),
+    ).rejects.toThrow(ConflictException);
+    expect(tx.insuranceDocument.create).not.toHaveBeenCalled();
+  });
+});

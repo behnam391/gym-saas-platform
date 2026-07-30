@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContext } from '../common/tenant-context';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   SearchTenantsDto,
   UpdateTenantProfileDto,
@@ -26,6 +27,7 @@ export class TenantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContext,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -241,7 +243,7 @@ export class TenantsService {
   }
 
   async reviewInsurance(documentId: string, reviewerId: string, dto: ReviewInsuranceDto) {
-    return this.prisma.forTenant(async (tx) => {
+    const updated = await this.prisma.forTenant(async (tx) => {
       const doc = await tx.insuranceDocument.findUnique({ where: { id: documentId } });
       if (!doc) throw new NotFoundException('سند بیمه یافت نشد.');
       const updated = await tx.insuranceDocument.update({
@@ -261,6 +263,22 @@ export class TenantsService {
       }
       return updated;
     });
+
+    await this.notifications.create({
+      userId: updated.userId,
+      title: dto.status === 'APPROVED' ? 'بیمه ورزشی تأیید شد' : 'مدرک بیمه نیاز به اصلاح دارد',
+      body:
+        dto.status === 'APPROVED'
+          ? 'بیمه ورزشی شما تأیید شد و عضویت وارد مرحله پرداخت شده است.'
+          : dto.rejectionReason || 'مدرک بیمه رد شد؛ لطفاً نسخه خوانا و معتبر را دوباره ارسال کنید.',
+      metadata: {
+        type: 'INSURANCE_REVIEW',
+        documentId: updated.id,
+        status: dto.status,
+      },
+    });
+
+    return updated;
   }
 
   /** Approving consent lifts `isRestricted` on the minor's account —

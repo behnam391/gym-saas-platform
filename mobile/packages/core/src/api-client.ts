@@ -1,5 +1,6 @@
 import type {
   AttendancePass,
+  AppNotification,
   AthleteGoal,
   AthleteMembership,
   AthletePayment,
@@ -23,6 +24,7 @@ import type {
   SessionTokens,
   TrainingProgram,
   UploadResult,
+  InsuranceDocument,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -126,15 +128,22 @@ export class GordyarApiClient {
     });
   }
 
-  uploadProfileImage(file: { uri: string; name: string; type: string }) {
+  uploadFile(
+    purpose: 'PROFILE_IMAGE' | 'INSURANCE_DOCUMENT',
+    file: { uri: string; name: string; type: string },
+  ) {
     const form = new FormData();
-    form.append('purpose', 'PROFILE_IMAGE');
+    form.append('purpose', purpose);
     form.append('file', file as unknown as Blob);
     return this.request<UploadResult>('/uploads/local', {
       method: 'POST',
       authenticated: true,
       body: form,
     });
+  }
+
+  uploadProfileImage(file: { uri: string; name: string; type: string }) {
+    return this.uploadFile('PROFILE_IMAGE', file);
   }
 
   getMyMemberships() {
@@ -184,6 +193,40 @@ export class GordyarApiClient {
       `/payments/memberships/${encodeURIComponent(membershipId)}/zarinpal`,
       { method: 'POST', authenticated: true },
     );
+  }
+
+  submitInsurance(input: {
+    documentUrl: string;
+    provider?: string;
+    policyNumber?: string;
+    validFrom?: string;
+    validUntil?: string;
+  }) {
+    return this.request<InsuranceDocument>('/athletes/me/insurance', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify(input),
+    });
+  }
+
+  getMyNotifications() {
+    return this.request<AppNotification[]>('/notifications/mine', {
+      authenticated: true,
+    });
+  }
+
+  markNotificationRead(notificationId: string) {
+    return this.request<{ updated: number }>(
+      `/notifications/${encodeURIComponent(notificationId)}/read`,
+      { method: 'PATCH', authenticated: true },
+    );
+  }
+
+  markAllNotificationsRead() {
+    return this.request<{ updated: number }>('/notifications/read-all', {
+      method: 'PATCH',
+      authenticated: true,
+    });
   }
 
   async logout() {

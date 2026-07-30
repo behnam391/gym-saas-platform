@@ -23,6 +23,8 @@ export default function RootLayout() {
         <Stack.Screen name="progress" options={{ title: 'روند پیشرفت من' }} />
         <Stack.Screen name="edit-profile" options={{ title: 'ویرایش پروفایل' }} />
         <Stack.Screen name="payments" options={{ title: 'پرداخت‌ها و رسیدها' }} />
+        <Stack.Screen name="insurance" options={{ title: 'بیمه ورزشی' }} />
+        <Stack.Screen name="notifications" options={{ title: 'اعلان‌ها' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>
