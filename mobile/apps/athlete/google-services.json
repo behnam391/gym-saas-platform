@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "880479359311",
+    "project_id": "gordyar",
+    "storage_bucket": "gordyar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:880479359311:android:e1d2ec97c4c40ab8dff53a",
+        "android_client_info": {
+          "package_name": "ir.gordyar.athlete"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSVYw8p-odR06J4wrFwNqhTDSnXwCJI0Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,3 +6,6 @@ dist*/
 .env.local
 *.tsbuildinfo
 npm-debug.log*
+
+# Firebase service-account private keys (google-services.json is public app config)
+*firebase-adminsdk*.json

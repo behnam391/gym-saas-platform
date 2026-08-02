@@ -27,9 +27,10 @@ export async function getPushCapabilityStatus() {
     return 'unavailable' as const;
   }
   const permission = await Notifications.getPermissionsAsync();
-  return permission.status === 'granted'
-    ? ('enabled' as const)
-    : ('disabled' as const);
+  if (permission.status !== 'granted') return 'disabled' as const;
+
+  const registeredToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+  return registeredToken ? ('enabled' as const) : ('disabled' as const);
 }
 
 export async function registerForPushNotifications(

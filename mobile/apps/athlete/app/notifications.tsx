@@ -86,9 +86,16 @@ export default function NotificationsScreen() {
 
   async function enablePush() {
     setEnablingPush(true);
+    setError(null);
     try {
       const token = await registerForPushNotifications(true);
       setPushStatus(token ? 'enabled' : 'disabled');
+      if (!token) {
+        setError('ثبت اعلان گوشی کامل نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.');
+      }
+    } catch {
+      setPushStatus('disabled');
+      setError('ثبت اعلان گوشی انجام نشد؛ دوباره تلاش کنید.');
     } finally {
       setEnablingPush(false);
     }
