@@ -45,7 +45,8 @@
         "expo-image-picker",
         {
           "photosPermission": "برای انتخاب عکس پروفایل، گُردیار به تصاویر انتخابی شما دسترسی نیاز دارد.",
-          "cameraPermission": "برای ثبت عکس پروفایل، گُردیار به دوربین نیاز دارد."
+          "cameraPermission": "برای ثبت عکس پروفایل، گُردیار به دوربین نیاز دارد.",
+          "microphonePermission": false
         }
       ],
       [
@@ -60,6 +61,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0842d01d-1078-4c7a-82b1-0e529b750837"
+      }
+    },
+    "owner": "shafie28"
   }
 }
