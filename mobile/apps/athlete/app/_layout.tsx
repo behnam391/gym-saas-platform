@@ -28,6 +28,7 @@ export default function RootLayout() {
         <Stack.Screen name="insurance" options={{ title: 'بیمه ورزشی' }} />
         <Stack.Screen name="parental-consent" options={{ title: 'رضایت‌نامه والدین' }} />
         <Stack.Screen name="notifications" options={{ title: 'اعلان‌ها' }} />
+        <Stack.Screen name="experts" options={{ title: 'مربیان و مشاوران' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>

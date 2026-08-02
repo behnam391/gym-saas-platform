@@ -324,6 +324,32 @@ export type AppNotification = {
   createdAt: string;
 };
 
+export type PlatformProfessional = {
+  id: string;
+  type: 'TRAINER' | 'NUTRITIONIST';
+  fullName: string;
+  profileImageUrl?: string | null;
+  bio?: string | null;
+  specialties: string[];
+  province?: string | null;
+  city?: string | null;
+  serviceMode: 'ONLINE' | 'IN_PERSON' | 'HYBRID';
+  consultationFee?: number | string | null;
+  rating: number;
+  isFeatured: boolean;
+  isActive: boolean;
+};
+
+export type ConsultationRequest = {
+  id: string;
+  professionalId: string;
+  status: 'REQUESTED' | 'CONTACTED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  preferredAt?: string | null;
+  message?: string | null;
+  createdAt: string;
+  professional: PlatformProfessional;
+};
+
 export type SessionStore = {
   load(): Promise<SessionTokens | null>;
   save(tokens: SessionTokens): Promise<void>;

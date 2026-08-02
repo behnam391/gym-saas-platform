@@ -54,6 +54,12 @@ const accountItems: {
     minorOnly: true,
   },
   {
+    icon: 'chatbubbles-outline',
+    title: 'مربیان و مشاوران سراسری',
+    hint: 'انتخاب متخصص و ثبت درخواست مشاوره آنلاین',
+    href: '/experts' as Href,
+  },
+  {
     icon: 'notifications-outline',
     title: 'اعلان‌های من',
     hint: 'نتیجه بیمه، پرداخت و پیام‌های سامانه',

@@ -26,6 +26,8 @@ import type {
   UploadResult,
   InsuranceDocument,
   ParentalConsent,
+  PlatformProfessional,
+  ConsultationRequest,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -261,6 +263,31 @@ export class GordyarApiClient {
       authenticated: true,
       body: JSON.stringify({ expoPushToken }),
     });
+  }
+
+  getPlatformProfessionals(type?: 'TRAINER' | 'NUTRITIONIST') {
+    const suffix = type ? `?type=${type}` : '';
+    return this.request<PlatformProfessional[]>(`/platform-professionals${suffix}`);
+  }
+
+  getMyConsultationRequests() {
+    return this.request<ConsultationRequest[]>('/platform-professionals/mine', {
+      authenticated: true,
+    });
+  }
+
+  requestConsultation(
+    professionalId: string,
+    input: { message?: string; preferredAt?: string },
+  ) {
+    return this.request<ConsultationRequest & { message: string }>(
+      `/platform-professionals/${encodeURIComponent(professionalId)}/consultations`,
+      {
+        method: 'POST',
+        authenticated: true,
+        body: JSON.stringify(input),
+      },
+    );
   }
 
   async logout(expoPushToken?: string) {
