@@ -32,6 +32,7 @@ export default function RootLayout() {
         <Stack.Screen name="forgot-password" options={{ title: 'بازیابی رمز عبور' }} />
         <Stack.Screen name="change-password" options={{ title: 'تغییر رمز عبور' }} />
         <Stack.Screen name="support" options={{ title: 'پشتیبانی' }} />
+        <Stack.Screen name="about" options={{ title: 'درباره و حریم خصوصی' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>

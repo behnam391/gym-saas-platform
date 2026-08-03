@@ -6,6 +6,7 @@ import { BadgeCheck, Building2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Megaphone, MapPin } from 'lucide-react';
 import { HeroSlide, PublicHeroSlider } from '../components/ui/public-hero-slider';
+import { SiteFooter } from '../components/ui/site-footer';
 
 interface TenantSummary {
   id: string;
@@ -141,6 +142,7 @@ export default async function HomePage({
         )}
       </section>
       </main>
+      <SiteFooter />
     </>
   );
 }

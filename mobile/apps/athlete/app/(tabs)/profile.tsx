@@ -72,6 +72,12 @@ const accountItems: {
     href: '/support' as Href,
   },
   {
+    icon: 'information-circle-outline',
+    title: 'درباره و حریم خصوصی',
+    hint: 'قوانین، نحوه حفاظت از اطلاعات و حذف حساب',
+    href: '/about' as Href,
+  },
+  {
     icon: 'lock-closed-outline',
     title: 'امنیت و تغییر رمز عبور',
     hint: 'تغییر رمز و خروج امن از همه دستگاه‌ها',

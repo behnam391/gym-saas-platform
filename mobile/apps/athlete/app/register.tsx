@@ -1,6 +1,7 @@
 import type { AthleteRegistration } from '@gordyar/mobile-core';
 import { ApiError } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -249,6 +250,14 @@ export default function RegisterScreen() {
           قوانین استفاده و سیاست حریم خصوصی گُردیار را خوانده‌ام و می‌پذیرم.
         </Text>
       </Pressable>
+      <View style={styles.policyLinks}>
+        <Pressable onPress={() => WebBrowser.openBrowserAsync('https://app.gordyar.ir/terms')}>
+          <Text style={styles.policyLink}>مشاهده قوانین استفاده</Text>
+        </Pressable>
+        <Pressable onPress={() => WebBrowser.openBrowserAsync('https://app.gordyar.ir/privacy')}>
+          <Text style={styles.policyLink}>مشاهده حریم خصوصی</Text>
+        </Pressable>
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <PrimaryButton
@@ -322,6 +331,12 @@ const styles = StyleSheet.create({
   },
   checkboxActive: { backgroundColor: Brand.emerald, borderColor: Brand.emerald },
   acceptText: { flex: 1, color: Brand.muted, fontSize: 11, lineHeight: 19, textAlign: 'right' },
+  policyLinks: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    gap: 18,
+  },
+  policyLink: { color: Brand.emerald, fontSize: 11, fontWeight: '900' },
   error: {
     color: Brand.danger,
     backgroundColor: '#FFF0F0',
