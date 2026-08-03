@@ -27,9 +27,19 @@ export class TicketsController {
     return this.ticketsService.listForGym();
   }
 
+  @Get('admin')
+  @Roles('SUPER_ADMIN')
+  listForPlatform() {
+    return this.ticketsService.listForPlatform();
+  }
+
   @Patch(':ticketId')
-  @Roles('GYM_OWNER', 'RECEPTION')
-  update(@Param('ticketId') ticketId: string, @Body() dto: UpdateTicketDto) {
-    return this.ticketsService.update(ticketId, dto);
+  @Roles('GYM_OWNER', 'RECEPTION', 'SUPER_ADMIN')
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('ticketId') ticketId: string,
+    @Body() dto: UpdateTicketDto,
+  ) {
+    return this.ticketsService.update(ticketId, dto, user.role === 'SUPER_ADMIN');
   }
 }

@@ -29,6 +29,8 @@ import type {
   ParentalConsent,
   PlatformProfessional,
   ConsultationRequest,
+  AthleteTicket,
+  TicketPriority,
 } from './types';
 
 type RequestOptions = RequestInit & {
@@ -311,6 +313,24 @@ export class GordyarApiClient {
         body: JSON.stringify(input),
       },
     );
+  }
+
+  getMyTickets() {
+    return this.request<AthleteTicket[]>('/tickets/mine', {
+      authenticated: true,
+    });
+  }
+
+  createPlatformTicket(input: {
+    subject: string;
+    description: string;
+    priority: TicketPriority;
+  }) {
+    return this.request<AthleteTicket>('/tickets', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify({ ...input, targetType: 'PLATFORM' }),
+    });
   }
 
   async logout(expoPushToken?: string) {

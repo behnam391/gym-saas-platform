@@ -66,6 +66,12 @@ const accountItems: {
     href: '/notifications' as Href,
   },
   {
+    icon: 'help-buoy-outline',
+    title: 'پشتیبانی گُردیار',
+    hint: 'ثبت درخواست و پیگیری پاسخ مدیریت سامانه',
+    href: '/support' as Href,
+  },
+  {
     icon: 'lock-closed-outline',
     title: 'امنیت و تغییر رمز عبور',
     hint: 'تغییر رمز و خروج امن از همه دستگاه‌ها',

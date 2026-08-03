@@ -1,4 +1,10 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateTicketDto {
   @IsIn(['GYM', 'TRAINER', 'NUTRITIONIST', 'PLATFORM'])
@@ -10,10 +16,12 @@ export class CreateTicketDto {
 
   @IsString()
   @IsNotEmpty({ message: 'موضوع تیکت الزامی است.' })
+  @MaxLength(150)
   subject: string;
 
   @IsString()
   @IsNotEmpty({ message: 'توضیحات تیکت الزامی است.' })
+  @MaxLength(2000)
   description: string;
 
   @IsOptional()

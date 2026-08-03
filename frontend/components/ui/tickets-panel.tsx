@@ -5,12 +5,19 @@ import { MembershipCard } from './membership-card';
 import { Badge } from './badge';
 import { api, ApiError } from '../../lib/api';
 
-interface TicketItem {
+export interface TicketItem {
   id: string;
   subject: string;
   description: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  createdAt?: string;
+  createdBy?: {
+    firstName: string;
+    lastName: string;
+    mobile: string;
+    email?: string | null;
+  };
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -47,6 +54,15 @@ export function TicketsPanel({ initial }: { initial: TicketItem[] }) {
             <div>
               <p className="font-bold">{t.subject}</p>
               <p className="mt-1 text-sm text-muted">{t.description}</p>
+              {t.createdBy ? (
+                <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted">
+                  <span>{t.createdBy.firstName} {t.createdBy.lastName}</span>
+                  <a href={`tel:${t.createdBy.mobile}`} dir="ltr">{t.createdBy.mobile}</a>
+                  {t.createdBy.email ? (
+                    <a href={`mailto:${t.createdBy.email}`}>{t.createdBy.email}</a>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <div className="flex flex-col items-end gap-2">
               <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABEL[t.priority]}</Badge>
@@ -77,6 +93,11 @@ export function TicketsPanel({ initial }: { initial: TicketItem[] }) {
           )}
         </MembershipCard>
       ))}
+      {!tickets.length ? (
+        <MembershipCard className="py-10 text-center text-muted">
+          هنوز درخواست پشتیبانی ثبت نشده است.
+        </MembershipCard>
+      ) : null}
     </div>
   );
 }

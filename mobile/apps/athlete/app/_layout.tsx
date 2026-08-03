@@ -31,6 +31,7 @@ export default function RootLayout() {
         <Stack.Screen name="experts" options={{ title: 'مربیان و مشاوران' }} />
         <Stack.Screen name="forgot-password" options={{ title: 'بازیابی رمز عبور' }} />
         <Stack.Screen name="change-password" options={{ title: 'تغییر رمز عبور' }} />
+        <Stack.Screen name="support" options={{ title: 'پشتیبانی' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>

@@ -351,6 +351,19 @@ export type ConsultationRequest = {
   professional: PlatformProfessional;
 };
 
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+export type AthleteTicket = {
+  id: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SessionStore = {
   load(): Promise<SessionTokens | null>;
   save(tokens: SessionTokens): Promise<void>;

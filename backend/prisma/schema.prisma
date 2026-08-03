@@ -1198,8 +1198,8 @@ model ConsultationRequest {
 
 model Ticket {
   id           String  @id @default(uuid())
-  tenantId     String
-  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String?
+  tenant       Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdById  String
   createdBy    User    @relation("TicketCreator", fields: [createdById], references: [id], onDelete: Cascade)
   assignedToId String?
