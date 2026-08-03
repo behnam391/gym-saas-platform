@@ -18,6 +18,7 @@ import type {
   RegistrationResult,
   MembershipRequestResult,
   OtpChannel,
+  OtpPurpose,
   OtpRequestResult,
   OtpVerificationResult,
   SessionStore,
@@ -70,13 +71,17 @@ export class GordyarApiClient {
     });
   }
 
-  requestOtp(channel: OtpChannel, destination: string) {
+  requestOtp(
+    channel: OtpChannel,
+    destination: string,
+    purpose: OtpPurpose = 'REGISTER',
+  ) {
     return this.request<OtpRequestResult>('/auth/otp/request', {
       method: 'POST',
       body: JSON.stringify({
         channel,
         destination,
-        purpose: 'REGISTER',
+        purpose,
       }),
     });
   }
@@ -85,6 +90,24 @@ export class GordyarApiClient {
     return this.request<OtpVerificationResult>('/auth/otp/verify', {
       method: 'POST',
       body: JSON.stringify({ challengeId, code }),
+    });
+  }
+
+  resetPassword(verificationToken: string, newPassword: string) {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ verificationToken, newPassword }),
+    });
+  }
+
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.request<{
+      message: string;
+      reauthenticationRequired: boolean;
+    }>('/auth/change-password', {
+      method: 'POST',
+      authenticated: true,
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
   }
 

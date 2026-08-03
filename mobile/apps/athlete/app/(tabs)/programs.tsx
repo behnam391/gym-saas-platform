@@ -5,7 +5,7 @@ import type {
   TrainingProgram,
 } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -178,17 +178,20 @@ export default function ProgramsScreen() {
         />
       )}
 
-      <Surface style={styles.consultation}>
-        <View style={styles.consultationIcon}>
-          <Ionicons name="chatbubbles-outline" size={23} color={Brand.emerald} />
-        </View>
-        <View style={styles.consultationCopy}>
-          <Text style={styles.consultationTitle}>مشاوره آنلاین</Text>
-          <Text style={styles.consultationText}>
-            رزرو و گفت‌وگوی مستقیم با مربی و مشاور تغذیه در مرحله بعد فعال می‌شود.
-          </Text>
-        </View>
-      </Surface>
+      <Link href={'/experts' as Href} asChild>
+        <Pressable style={styles.consultation}>
+          <View style={styles.consultationIcon}>
+            <Ionicons name="chatbubbles-outline" size={23} color={Brand.emerald} />
+          </View>
+          <View style={styles.consultationCopy}>
+            <Text style={styles.consultationTitle}>مشاوره با متخصصان سراسری</Text>
+            <Text style={styles.consultationText}>
+              مربی یا مشاور تغذیه را انتخاب و درخواست مشاوره ثبت کنید.
+            </Text>
+          </View>
+          <Ionicons name="chevron-back" size={20} color={Brand.muted} />
+        </Pressable>
+      </Link>
     </Screen>
   );
 }
@@ -680,7 +683,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
-  consultation: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+  consultation: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Brand.card,
+    borderColor: Brand.line,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 18,
+  },
   consultationIcon: {
     width: 48,
     height: 48,

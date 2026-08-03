@@ -65,6 +65,12 @@ const accountItems: {
     hint: 'نتیجه بیمه، پرداخت و پیام‌های سامانه',
     href: '/notifications' as Href,
   },
+  {
+    icon: 'lock-closed-outline',
+    title: 'امنیت و تغییر رمز عبور',
+    hint: 'تغییر رمز و خروج امن از همه دستگاه‌ها',
+    href: '/change-password' as Href,
+  },
 ];
 
 export default function ProfileScreen() {

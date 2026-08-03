@@ -1,6 +1,6 @@
 import { ApiError } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Link, router, type Href, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -12,7 +12,11 @@ import { toLatinDigits } from '@/lib/digits';
 import { useSession } from '@/providers/session-provider';
 
 export default function SignInScreen() {
-  const params = useLocalSearchParams<{ identifier?: string; registered?: string }>();
+  const params = useLocalSearchParams<{
+    identifier?: string;
+    registered?: string;
+    passwordChanged?: string;
+  }>();
   const { signIn } = useSession();
   const [identifier, setIdentifier] = useState(params.identifier ?? '');
   const [password, setPassword] = useState('');
@@ -59,6 +63,9 @@ export default function SignInScreen() {
         {params.registered === '1' ? (
           <Text style={styles.success}>حساب با موفقیت ساخته شد؛ حالا وارد گُردیار شوید.</Text>
         ) : null}
+        {params.passwordChanged === '1' ? (
+          <Text style={styles.success}>رمز عبور با موفقیت تغییر کرد؛ با رمز جدید وارد شوید.</Text>
+        ) : null}
         <FormField
           label="شماره موبایل یا کد ملی"
           icon="call-outline"
@@ -78,6 +85,9 @@ export default function SignInScreen() {
           placeholder="رمز عبور حساب ورزشکاری"
           onSubmitEditing={submit}
         />
+        <Link href={'/forgot-password' as Href} style={styles.forgotLink}>
+          رمز عبور را فراموش کرده‌اید؟
+        </Link>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <PrimaryButton title="ورود به گُردیار" onPress={submit} loading={loading} />
       </View>
@@ -146,6 +156,12 @@ const styles = StyleSheet.create({
   },
   registerHint: { color: Brand.muted, fontSize: 12 },
   registerLink: { color: Brand.emerald, fontSize: 12, fontWeight: '900' },
+  forgotLink: {
+    color: Brand.emerald,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'right',
+  },
   security: {
     flexDirection: 'row-reverse',
     alignItems: 'center',

@@ -29,6 +29,8 @@ export default function RootLayout() {
         <Stack.Screen name="parental-consent" options={{ title: 'رضایت‌نامه والدین' }} />
         <Stack.Screen name="notifications" options={{ title: 'اعلان‌ها' }} />
         <Stack.Screen name="experts" options={{ title: 'مربیان و مشاوران' }} />
+        <Stack.Screen name="forgot-password" options={{ title: 'بازیابی رمز عبور' }} />
+        <Stack.Screen name="change-password" options={{ title: 'تغییر رمز عبور' }} />
       </Stack>
       <StatusBar style="dark" />
     </SessionProvider>

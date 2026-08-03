@@ -1,4 +1,4 @@
-import type { OtpChannel } from '@gordyar/mobile-core';
+import type { OtpChannel, OtpPurpose } from '@gordyar/mobile-core';
 import { ApiError } from '@gordyar/mobile-core';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useState } from 'react';
@@ -14,12 +14,14 @@ import { Surface } from './screen';
 type Props = {
   mobile: string;
   email?: string;
+  purpose?: OtpPurpose;
   onVerified(token: string | null): void;
 };
 
 export function ContactVerification({
   mobile,
   email = '',
+  purpose = 'REGISTER',
   onVerified,
 }: Props) {
   const [channel, setChannel] = useState<OtpChannel>('SMS');
@@ -78,7 +80,7 @@ export function ContactVerification({
     setMessage(null);
     onVerified(null);
     try {
-      const result = await api.requestOtp(channel, destination);
+      const result = await api.requestOtp(channel, destination, purpose);
       setChallengeId(result.challengeId);
       setRetryAt(Date.now() + result.retryAfterSeconds * 1_000);
       setMessage(

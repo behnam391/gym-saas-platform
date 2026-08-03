@@ -43,6 +43,7 @@ export type RegistrationResult = {
 };
 
 export type OtpChannel = 'SMS' | 'EMAIL';
+export type OtpPurpose = 'REGISTER' | 'ONBOARDING' | 'RESET_PASSWORD' | 'LOGIN';
 
 export type OtpRequestResult = {
   challengeId: string;
