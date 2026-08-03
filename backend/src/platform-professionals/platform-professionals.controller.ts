@@ -7,6 +7,7 @@ import {
   CreateConsultationRequestDto,
   CreatePlatformProfessionalDto,
   SetPlatformProfessionalAccessDto,
+  UpdateConsultationStatusDto,
 } from './dto/platform-professional.dto';
 import { PlatformProfessionalsService } from './platform-professionals.service';
 
@@ -52,6 +53,27 @@ export class PlatformProfessionalsController {
   @Roles('SUPER_ADMIN')
   create(@Body() dto: CreatePlatformProfessionalDto) {
     return this.service.create(dto);
+  }
+
+  @Get('admin/consultations')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  adminConsultations(@Query('status') status?: string) {
+    const allowed = ['REQUESTED', 'CONTACTED', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+    if (status && !allowed.includes(status)) {
+      throw new BadRequestException('وضعیت درخواست نامعتبر است.');
+    }
+    return this.service.adminConsultations(status);
+  }
+
+  @Patch('admin/consultations/:requestId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  updateConsultationStatus(
+    @Param('requestId') requestId: string,
+    @Body() dto: UpdateConsultationStatusDto,
+  ) {
+    return this.service.updateConsultationStatus(requestId, dto.status);
   }
 
   @Patch('admin/:professionalId/access')

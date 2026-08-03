@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConsultationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateConsultationRequestDto,
@@ -26,6 +27,53 @@ export class PlatformProfessionalsService {
     return this.prisma.forPlatform().platformProfessional.findMany({
       include: { _count: { select: { consultationRequests: true } } },
       orderBy: [{ isActive: 'desc' }, { isFeatured: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  adminConsultations(status?: string) {
+    return this.prisma.forPlatform().consultationRequest.findMany({
+      where: status ? { status: status as ConsultationStatus } : undefined,
+      include: {
+        professional: true,
+        athlete: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mobile: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      take: 500,
+    });
+  }
+
+  async updateConsultationStatus(requestId: string, status: string) {
+    const db = this.prisma.forPlatform();
+    const existing = await db.consultationRequest.findUnique({
+      where: { id: requestId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('درخواست مشاوره یافت نشد.');
+    }
+    return db.consultationRequest.update({
+      where: { id: requestId },
+      data: { status: status as ConsultationStatus },
+      include: {
+        professional: true,
+        athlete: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mobile: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 

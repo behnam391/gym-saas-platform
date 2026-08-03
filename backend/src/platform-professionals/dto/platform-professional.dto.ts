@@ -55,3 +55,13 @@ export class CreateConsultationRequestDto {
   @IsOptional() @IsString() @MaxLength(1000)
   message?: string;
 }
+
+export class UpdateConsultationStatusDto {
+  @IsIn(['REQUESTED', 'CONTACTED', 'CONFIRMED', 'COMPLETED', 'CANCELLED'])
+  status:
+    | 'REQUESTED'
+    | 'CONTACTED'
+    | 'CONFIRMED'
+    | 'COMPLETED'
+    | 'CANCELLED';
+}
