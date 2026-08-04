@@ -58,12 +58,44 @@ export class GordyarApiClient {
   ) {}
 
   async login(input: Omit<LoginRequest, 'expectedRole'>): Promise<SessionTokens> {
+    return this.loginAs({ ...input, expectedRole: 'ATHLETE' });
+  }
+
+  async loginAs(input: LoginRequest): Promise<SessionTokens> {
     const tokens = await this.request<SessionTokens>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ ...input, expectedRole: 'ATHLETE' }),
+      body: JSON.stringify(input),
     });
     await this.sessionStore.save(tokens);
     return tokens;
+  }
+
+  get<T>(path: string, authenticated = true) {
+    return this.request<T>(path, { authenticated });
+  }
+
+  post<T>(path: string, body?: unknown, authenticated = true) {
+    return this.request<T>(path, {
+      method: 'POST',
+      authenticated,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  }
+
+  patch<T>(path: string, body?: unknown, authenticated = true) {
+    return this.request<T>(path, {
+      method: 'PATCH',
+      authenticated,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  }
+
+  delete<T>(path: string, body?: unknown, authenticated = true) {
+    return this.request<T>(path, {
+      method: 'DELETE',
+      authenticated,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
   }
 
   registerAthlete(input: AthleteRegistration & { verificationToken: string }) {

@@ -1,0 +1,11 @@
+.expo/
+dist/
+dist-check/
+web-build/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*

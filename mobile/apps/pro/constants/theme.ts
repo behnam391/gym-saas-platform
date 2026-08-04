@@ -1,0 +1,18 @@
+export const Brand = {
+  ink: '#07110E',
+  inkSoft: '#10211B',
+  surface: '#F3F6F1',
+  card: '#FFFFFF',
+  line: '#DDE5DD',
+  lime: '#C8F135',
+  emerald: '#0D7C5B',
+  emeraldSoft: '#E7F4EF',
+  text: '#102019',
+  muted: '#68756F',
+  danger: '#C63B3B',
+  dangerSoft: '#FFF0F0',
+  warning: '#E99A18',
+  warningSoft: '#FFF6E4',
+  info: '#2D6CDF',
+  infoSoft: '#EDF3FF',
+} as const;

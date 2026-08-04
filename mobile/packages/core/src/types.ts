@@ -2,7 +2,7 @@ export type UserRole =
   | 'ATHLETE'
   | 'GYM_OWNER'
   | 'RECEPTION'
-  | 'BUFFET'
+  | 'BUFFET_STAFF'
   | 'TRAINER'
   | 'NUTRITIONIST'
   | 'SUPER_ADMIN';

@@ -11,7 +11,12 @@
     "athlete:android": "npm --workspace @gordyar/athlete run android",
     "athlete:ios": "npm --workspace @gordyar/athlete run ios",
     "athlete:web": "npm --workspace @gordyar/athlete run web",
-    "typecheck": "npm --workspace @gordyar/mobile-core run typecheck && npm --workspace @gordyar/athlete run typecheck",
-    "lint": "npm --workspace @gordyar/athlete run lint"
+    "pro": "npm --workspace @gordyar/pro run start",
+    "pro:offline": "npm --workspace @gordyar/pro run start:offline",
+    "pro:android": "npm --workspace @gordyar/pro run android",
+    "pro:ios": "npm --workspace @gordyar/pro run ios",
+    "pro:web": "npm --workspace @gordyar/pro run web",
+    "typecheck": "npm --workspace @gordyar/mobile-core run typecheck && npm --workspace @gordyar/athlete run typecheck && npm --workspace @gordyar/pro run typecheck",
+    "lint": "npm --workspace @gordyar/athlete run lint && npm --workspace @gordyar/pro run lint"
   }
 }
